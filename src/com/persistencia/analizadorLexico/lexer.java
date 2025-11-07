@@ -53,23 +53,43 @@ public class lexer {
             case ',':
                 aniadirToken(tipoToken.COMA);
                 break;
+            case '=':
+                aniadirToken(tipoToken.ASIGNACION);
+                break;
             case ';':
                 aniadirToken(tipoToken.PUNTO_Y_COMA);
                 break;
+            case '<':
+                if(match('='))
+                    aniadirToken(tipoToken.MENOR_IGUAL);
+                else
+                    aniadirToken(tipoToken.MENOR_QUE);
+                break;
+            case '>':
+                if (match('='))
+                    aniadirToken(tipoToken.MAYOR_IGUAL);
+                else
+                    aniadirToken(tipoToken.MAYOR_QUE);
+                break;
             case '+':
                 if (match('='))
+                    aniadirToken(tipoToken.MAS_IGUAL);
+                else if (match('+')) 
                     aniadirToken(tipoToken.INCREMENTO);
-                aniadirToken(tipoToken.SUMA);
+                else
+                    aniadirToken(tipoToken.SUMA);
                 break;
             case '-':
                 if (match('='))
                     aniadirToken(tipoToken.DECREMENTO);
-                aniadirToken(tipoToken.RESTA);
+                else
+                    aniadirToken(tipoToken.RESTA);
                 break;
             case '*':
                 if (match('='))
                     aniadirToken(tipoToken.MULTIPLICACION_ASIGNACION);
-                aniadirToken(tipoToken.MULTIPLICACION);
+                else
+                    aniadirToken(tipoToken.MULTIPLICACION);
                 break;
             case '/':
                 if (match('/')) 

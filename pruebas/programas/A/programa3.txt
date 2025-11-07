@@ -1,0 +1,16 @@
+package programas.A;
+
+public class programa3 {
+    public static void main(String[] args){
+        System.out.println("Este es el programa 3");
+    }
+
+    public int ejemploFor(x){
+        int i = 0;
+        for(i; i < 10; i++){
+            System.out.println("Numero: " + i);
+        }
+
+        return i;
+    }
+}

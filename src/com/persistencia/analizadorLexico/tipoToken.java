@@ -28,7 +28,8 @@ public enum tipoToken {
     MAYOR_IGUAL,    // >=
     AND,            // &&
     OR,             // ||
-    INCREMENTO,     //++ | +=
+    INCREMENTO,     // ++ 
+    MAS_IGUAL,      // +=
     DECREMENTO,     //-- | -=
     DIVISION_ASIGNACION, // /=
     MULTIPLICACION_ASIGNACION, // *=
@@ -44,8 +45,6 @@ public enum tipoToken {
     COMA,           // ,
     PUNTO,          // .
     DOS_PUNTOS,     // :
-
-    //yobaniwis agrega EOF "end of file" y todos los que dan error en lexer.java y estan en MAYUSCULAS 
 
     // Token especial para el fin del archivo
     EOF, // End Of File
