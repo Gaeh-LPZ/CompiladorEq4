@@ -61,7 +61,7 @@ public final class grammar {
                 if (symbols.isEmpty()) {
                     throw new IllegalArgumentException("Producción vacía en: " + line);
                 }
-                g.prods.computeIfAbsent(lhs, _ -> new ArrayList<>()).add(symbols);
+                g.prods.computeIfAbsent(lhs, k -> new ArrayList<>()).add(symbols);
             }
         }
 

@@ -72,7 +72,7 @@ public class AnalizadorLRPanel extends JPanel {
         btnOpenG.addActionListener(this::onOpenGrammar);
         btnOpenP.addActionListener(this::onOpenProgram);
         btnAnalyze.addActionListener(this::onAnalyze);
-        btnClear.addActionListener(_ -> {
+        btnClear.addActionListener(k -> {
             grammarFile = null; programFile = null;
             txtGramPath.setText(""); txtProgPath.setText("");
             txtGrammar.setText(""); txtProgram.setText("");

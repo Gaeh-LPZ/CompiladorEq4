@@ -17,7 +17,6 @@ public class AnalizadorLexicoPanel extends JPanel {
     private JTextField filePathField;
     private JTextArea textArea;
 
-    @SuppressWarnings("unused")
     public AnalizadorLexicoPanel() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));

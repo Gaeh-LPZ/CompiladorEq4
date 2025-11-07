@@ -114,7 +114,7 @@ public final class lr0Table {
                     Set<itemLR0> J = canonicalLR.goTo(gAug, I, a);
                     Integer j = idx.get(J);
                     if (j == null) for (int k = 0; k < C.size(); k++) if (C.get(k).equals(J)) { j = k; break; }
-                    if (j != null) ACTION.computeIfAbsent(i, _ -> new LinkedHashMap<>()).put(a, "d"+j);
+                    if (j != null) ACTION.computeIfAbsent(i, unused -> new LinkedHashMap<>()).put(a, "d"+j);
                 }
             }
 
@@ -122,7 +122,7 @@ public final class lr0Table {
                     "$".equals(norm(it.symbolAfterDot())) &&
                     (it.dot + 1) == it.p.right.size() &&
                     it.p.left.endsWith("'"));
-            if (hasAccept) ACTION.computeIfAbsent(i, _ -> new LinkedHashMap<>()).put("$", "acep");
+            if (hasAccept) ACTION.computeIfAbsent(i, unused -> new LinkedHashMap<>()).put("$", "acep");
 
             for (itemLR0 it : I) {
                 boolean endOfRule = (it.symbolAfterDot() == null);
@@ -137,7 +137,7 @@ public final class lr0Table {
                         String aa = norm(a);
                         if (!T.contains(aa)) continue;
                         if ("$".equals(aa) && acceptHere) continue;
-                        ACTION.computeIfAbsent(i, _ -> new LinkedHashMap<>()).putIfAbsent(aa, "r"+k);
+                        ACTION.computeIfAbsent(i, unused -> new LinkedHashMap<>()).putIfAbsent(aa, "r"+k);
                     }
                 }
             }
@@ -147,7 +147,7 @@ public final class lr0Table {
                     Set<itemLR0> J = canonicalLR.goTo(gAug, I, A);
                     Integer j = idx.get(J);
                     if (j == null) for (int k = 0; k < C.size(); k++) if (C.get(k).equals(J)) { j = k; break; }
-                    if (j != null) GOTO.computeIfAbsent(i, _ -> new LinkedHashMap<>()).put(A, j);
+                    if (j != null) GOTO.computeIfAbsent(i, unused -> new LinkedHashMap<>()).put(A, j);
                 }
             }
         }

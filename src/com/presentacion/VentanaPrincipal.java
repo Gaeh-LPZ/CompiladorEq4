@@ -124,7 +124,7 @@ public class VentanaPrincipal extends JFrame {
             }
         });
 
-        closeBtn.addActionListener(_ -> tabbedPane.remove(scroll));
+        closeBtn.addActionListener(k -> tabbedPane.remove(scroll));
 
         tabHeader.add(tabLabel);
         tabHeader.add(closeBtn);

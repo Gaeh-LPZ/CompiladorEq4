@@ -45,7 +45,7 @@ public class TablaLRPanel extends JPanel {
 
         btnOpen.addActionListener(this::onOpen);
         btnBuild.addActionListener(this::onBuild);
-        btnClear.addActionListener(_ -> {
+        btnClear.addActionListener(unused -> {
             txtPath.setText("");
             txtGrammar.setText("");
             selectedFile = null;

@@ -65,7 +65,7 @@ public class ColeccionCanonicaPanel extends JPanel {
 
         btnOpen.addActionListener(this::onOpen);
         btnAnalyze.addActionListener(this::onAnalyze);
-        btnClear.addActionListener(_ -> {
+        btnClear.addActionListener(k -> {
             txtPath.setText("");
             txtOut.setText("");
             txtGrammar.setText("");
