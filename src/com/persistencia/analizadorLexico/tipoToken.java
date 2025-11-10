@@ -1,38 +1,54 @@
 package com.persistencia.analizadorLexico;
-
 public enum tipoToken {
     // Palabras reservadas
-     
-    ELSE, SWITCH, CASE, WHILE, DO, FOR, BREAK, CONTINUE, RETURN, PUBLIC, PRIVATE, PROTECTED, DEFAULT, ABSTRACT, CLASS, EXTENDS, FINAL, MAIN, IMPLEMENTS, INTERFACE, STATIC, CHAR, BOOLEAN, NEW, THIS, TRY, IMPORT, CATCH, PACKAGE, SUPER, NULL, TRUE, FALSE, IF, LONG, VOID, FINALLY, THROWS, ASSERT, BYTE, DOUBLE, SHORT, ENUM, VOLATILE, INSTANCEOF, NATIVE, TRANSIENT, SYNCHRONIZED, THROW, INT, FLOAT, CADENA, SYSTEM, OUT, PRINTLN, STRING, ARGS,
+    PACKAGE, IMPORT, CLASS, INTERFACE, ENUM, 
+    PUBLIC, PRIVATE, PROTECTED, ABSTRACT, STATIC, FINAL, SYNCHRONIZED, NATIVE, TRANSIENT, VOLATILE,
+    EXTENDS, IMPLEMENTS, VOID, THROWS, 
+    IF, ELSE, SWITCH, CASE, DEFAULT, WHILE, DO, FOR, BREAK, CONTINUE, RETURN, THROW, TRY, CATCH, FINALLY,
+    BOOLEAN, BYTE, SHORT, INT, LONG, CHAR, FLOAT, DOUBLE,
+    NEW, THIS, SUPER, NULL, TRUE, FALSE, INSTANCEOF,
+    ASSERT,
+    
+    // Extras (aunque no son palabras reservadas estándar de Java)
+    MAIN, CADENA, SYSTEM, OUT, PRINTLN,
 
-    //identificadores y literales
+    // Identificadores y literales
     IDENTIFICADOR,
     LITERAL_ENTERA,
     LITERAL_FLOTANTE,
     LITERAL_CADENA,
 
-
-    //operadores 
-    COMILLA,         // "
+    // Operadores aritméticos
     SUMA,           // +
     RESTA,          // -
     MULTIPLICACION, // *
     DIVISION,       // /
     MOD,            // %
+    
+    // Operadores de asignación y comparación
     ASIGNACION,     // =
     IGUAL,          // ==
     DIFERENTE,      // !=
-    MENOR_QUE,      // <
+    MENOR_QUE,      // 
     MAYOR_QUE,      // >
     MENOR_IGUAL,    // <=
     MAYOR_IGUAL,    // >=
+    
+    // Operadores lógicos
     AND,            // &&
     OR,             // ||
-    INCREMENTO,     // ++ 
-    MAS_IGUAL,      // +=
-    DECREMENTO,     //-- | -=
-    DIVISION_ASIGNACION, // /=
-    MULTIPLICACION_ASIGNACION, // *=
+    NOT,            // !
+    
+    // Operadores bit a bit
+    BITAND,         // &
+    BITOR,          // |
+    BITXOR,         // ^
+    TILDE,          // ~ (complemento bit a bit)
+    
+    // Operadores de desplazamiento
+    LSHIFT,         // 
+    RSHIFT,         // >>
+    URSHIFT,        // >>>
 
     // Símbolos y Delimitadores
     CORCHETE_IZQ,   // [
@@ -45,11 +61,20 @@ public enum tipoToken {
     COMA,           // ,
     PUNTO,          // .
     DOS_PUNTOS,     // :
+    COLON,          // : (alias para la gramática)
+    QUESTION,       // ?
+    ASTERISK,       // * (para imports y genéricos)
+    MENOR,          // < (para genéricos)
+    MAYOR,          // > (para genéricos)
+    ELLIPSIS,       // ... (varargs)
+    ARROBA,         // @ (anotaciones)
+    
+    COMILLA,        // "
 
     // Token especial para el fin del archivo
-    EOF, // End Of File
+    EOF,
 
-    // Token para elementos desconocidos
+    // Tokens para elementos desconocidos o errores
     DESCONOCIDO,
     ERROR_DE_CADENA
 }

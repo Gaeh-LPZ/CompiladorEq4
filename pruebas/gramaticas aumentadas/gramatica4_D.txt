@@ -1,0 +1,7 @@
+S A B
+id num ; 
+S'->S $
+S->A;S
+S->B
+A->id 
+B->num

@@ -1,0 +1,129 @@
+Programa UnidadCompilacion DeclaracionPaquete DeclaracionesImportacion DeclaracionImportacion DeclaracionesTipo DeclaracionTipo Modificadores Modificador DeclaracionClase DeclaracionInterfaz DeclaracionEnumeracion ParametrosTipoOpt ParametrosTipo ListaParametrosTipo ParametroTipo ListaTiposExtiendeOpt ClausulaExtiendeOpt ClausulaImplementaOpt CuerpoClase DeclaracionesCuerpoClase DeclaracionCuerpoClase DeclaracionMiembro DeclaracionCampo DeclaradoresDeVariable DeclaradorVariable DimensionesVarOpt InicializacionVarOpt InicializadorVariable InicializadorArreglo ListaInicializacionArregloOpt ListaInicializacionArreglo DeclaracionMetodo CabeceraMetodo TipoOVacio ClausulaLanzaOpt CuerpoMetodo DeclaracionConstructor CuerpoConstructor ListaParametrosFormalesOpt ListaParametrosFormales ParametroFormal ModificadoresParametroOpt Bloque SentenciasBloqueOpt SentenciasBloque SentenciaBloque SentenciaDeclaracionVarLocal Sentencia IDENTIFICADOR_OPC ExpresionOpt ClausulasCapturaOpt ClausulasCaptura ClausulaCaptura ParametroFormalCaptura FinalmenteOpt InicializacionParaOpt InicializacionPara DeclaracionVarLocal CondicionParaOpt ActualizacionParaOpt ListaExpresiones ParaCadaVariable SentenciaDeExpresion ExpresionDeSentencia Asignacion ExpresionCondicional ExpresionOrCondicional ExpresionAndCondicional ExpresionOrInclusivo ExpresionOrExclusivo ExpresionAnd ExpresionIgualdad ExpresionRelacional ExpresionDesplazamiento ExpresionAditiva ExpresionMultiplicativa ExpresionUnaria ExpresionPostfija OperadorPostfijoOpt OperadorPostfijo Primario MiembroSuperOpt ExpresionCreacionInstanciaClase CuerpoClaseOpt ListaArgumentosOpt ListaArgumentos LadoIzquierdo NombreDeExpresion AccesoCampo AccesoArreglo IdentificadorDeclaradorVariable DimensionesVarOpt Tipo DimensionesTipoOpt TipoPrimitivo TipoClaseOInterfaz ArgumentosTipoOpt ArgumentosTipo ListaArgumentosTipo NombreCalificado ListaNombresCalificados CuerpoEnumeracion ConstantesEnumeracionOpt ConstantesEnumeracion ConstanteEnumeracion ArgumentosConstanteEnumOpt DeclaracionesCuerpoEnumOpt DeclaracionesCuerpoEnum CuerpoInterfaz DeclaracionesMiembroInterfazOpt DeclaracionesMiembroInterfaz DeclaracionMiembroInterfaz DeclaracionMetodoDeInterfaz CuerpoMetodoOpt RestoCreadorDeArreglo DimensionesArregloOpt InicializacionDeclaradorDeVariable ListaTipos InvocacionDeMetodo Expresion TOKEN_EOF
+PACKAGE IMPORT CLASS INTERFACE ENUM PUBLIC PRIVATE PROTECTED ABSTRACT STATIC FINAL SYNCHRONIZED NATIVE TRANSIENT VOLATILE EXTENDS IMPLEMENTS VOID THROWS CATCH FINALLY TRUE FALSE NULL NEW THIS SUPER INSTANCEOF IF ELSE SWITCH CASE DEFAULT WHILE DO FOR BREAK CONTINUE RETURN THROW TRY BOOLEAN BYTE SHORT INT LONG CHAR FLOAT DOUBLE IDENTIFICADOR LITERAL_ENTERA LITERAL_FLOTANTE LITERAL_CADENA PUNTO_Y_COMA PUNTO ASTERISK COMA MENOR MAYOR ASIGNACION LLAVE_IZQ LLAVE_DER CORCHETE_IZQ CORCHETE_DER PARENTESIS_IZQ PARENTESIS_DER OR AND IGUAL DIFERENTE MENOR_QUE MAYOR_QUE MENOR_IGUAL MAYOR_IGUAL LSHIFT RSHIFT URSHIFT SUMA RESTA MULTIPLICACION DIVISION MOD NOT TILDE QUESTION DOS_PUNTOS BITAND BITOR BITXOR ELLIPSIS EOF
+P' -> Programa $
+Programa -> UnidadCompilacion EOF
+UnidadCompilacion -> DeclaracionPaquete DeclaracionesImportacion DeclaracionesTipo | DeclaracionesImportacion DeclaracionesTipo
+DeclaracionPaquete -> PACKAGE NombreCalificado PUNTO_Y_COMA | ε
+DeclaracionesImportacion -> DeclaracionImportacion DeclaracionesImportacion | ε
+DeclaracionImportacion -> IMPORT NombreCalificado PUNTO_Y_COMA
+DeclaracionImportacion -> IMPORT NombreCalificado PUNTO ASTERISK PUNTO_Y_COMA
+DeclaracionesTipo -> DeclaracionTipo DeclaracionesTipo | ε
+DeclaracionTipo -> DeclaracionClase | DeclaracionInterfaz | DeclaracionEnumeracion | PUNTO_Y_COMA
+Modificadores -> Modificador Modificadores | ε
+Modificador -> PUBLIC | PRIVATE | PROTECTED | ABSTRACT | STATIC | FINAL | SYNCHRONIZED | NATIVE | TRANSIENT | VOLATILE
+DeclaracionClase -> Modificadores CLASS IDENTIFICADOR ParametrosTipoOpt ClausulaExtiendeOpt ClausulaImplementaOpt CuerpoClase
+DeclaracionInterfaz -> Modificadores INTERFACE IDENTIFICADOR ParametrosTipoOpt ClausulaExtiendeOpt CuerpoInterfaz
+DeclaracionEnumeracion -> Modificadores ENUM IDENTIFICADOR CuerpoEnumeracion
+ParametrosTipoOpt -> ParametrosTipo | ε
+ParametrosTipo -> MENOR ListaParametrosTipo MAYOR
+ListaParametrosTipo -> ParametroTipo | ParametroTipo COMA ListaParametrosTipo
+ParametroTipo -> IDENTIFICADOR ListaTiposExtiendeOpt
+ListaTiposExtiendeOpt -> EXTENDS ListaTipos | ε
+ClausulaExtiendeOpt -> EXTENDS Tipo | ε
+ClausulaImplementaOpt -> IMPLEMENTS ListaTipos | ε
+CuerpoClase -> LLAVE_IZQ DeclaracionesCuerpoClase LLAVE_DER
+DeclaracionesCuerpoClase -> DeclaracionCuerpoClase DeclaracionesCuerpoClase | ε
+DeclaracionCuerpoClase -> DeclaracionMiembro | DeclaracionConstructor | STATIC Bloque | Bloque | PUNTO_Y_COMA
+DeclaracionMiembro -> DeclaracionCampo | DeclaracionMetodo | DeclaracionClase | DeclaracionInterfaz | DeclaracionEnumeracion
+DeclaracionCampo -> Modificadores Tipo DeclaradoresDeVariable PUNTO_Y_COMA
+DeclaradoresDeVariable -> DeclaradorVariable | DeclaradorVariable COMA DeclaradoresDeVariable
+DeclaradorVariable -> IDENTIFICADOR DimensionesVarOpt InicializacionVarOpt
+DimensionesVarOpt -> CORCHETE_IZQ CORCHETE_DER DimensionesVarOpt | ε
+InicializacionVarOpt -> ASIGNACION InicializadorVariable | ε
+InicializadorVariable -> Expresion | InicializadorArreglo
+InicializadorArreglo -> LLAVE_IZQ ListaInicializacionArregloOpt LLAVE_DER
+ListaInicializacionArregloOpt -> ListaInicializacionArreglo | ε
+ListaInicializacionArreglo -> InicializadorVariable | InicializadorVariable COMA ListaInicializacionArreglo
+DeclaracionMetodo -> Modificadores CabeceraMetodo CuerpoMetodo
+CabeceraMetodo -> TipoOVacio IDENTIFICADOR PARENTESIS_IZQ ListaParametrosFormalesOpt PARENTESIS_DER ClausulaLanzaOpt
+TipoOVacio -> Tipo | VOID
+ClausulaLanzaOpt -> THROWS ListaNombresCalificados | ε
+CuerpoMetodo -> Bloque | PUNTO_Y_COMA
+DeclaracionConstructor -> Modificadores IDENTIFICADOR PARENTESIS_IZQ ListaParametrosFormalesOpt PARENTESIS_DER ClausulaLanzaOpt CuerpoConstructor
+CuerpoConstructor -> Bloque
+ListaParametrosFormalesOpt -> ListaParametrosFormales | ε
+ListaParametrosFormales -> ParametroFormal | ParametroFormal COMA ListaParametrosFormales
+ParametroFormal -> ModificadoresParametroOpt Tipo IDENTIFICADOR | ModificadoresParametroOpt Tipo ELLIPSIS IDENTIFICADOR
+ModificadoresParametroOpt -> Modificador ModificadoresParametroOpt | ε
+Bloque -> LLAVE_IZQ SentenciasBloqueOpt LLAVE_DER
+SentenciasBloqueOpt -> SentenciasBloque | ε
+SentenciasBloque -> SentenciaBloque SentenciasBloque | SentenciaBloque
+SentenciaBloque -> SentenciaDeclaracionVarLocal | Sentencia
+SentenciaDeclaracionVarLocal -> Modificadores Tipo DeclaradoresDeVariable PUNTO_Y_COMA
+Sentencia -> Bloque | IF PARENTESIS_IZQ Expresion PARENTESIS_DER Sentencia ELSE Sentencia | IF PARENTESIS_IZQ Expresion PARENTESIS_DER Sentencia | SWITCH PARENTESIS_IZQ Expresion PARENTESIS_DER Bloque | WHILE PARENTESIS_IZQ Expresion PARENTESIS_DER Sentencia | DO Sentencia WHILE PARENTESIS_IZQ Expresion PARENTESIS_DER PUNTO_Y_COMA | FOR PARENTESIS_IZQ InicializacionParaOpt PUNTO_Y_COMA CondicionParaOpt PUNTO_Y_COMA ActualizacionParaOpt PARENTESIS_DER Sentencia | BREAK IDENTIFICADOR_OPC PUNTO_Y_COMA | CONTINUE IDENTIFICADOR_OPC PUNTO_Y_COMA | RETURN ExpresionOpt PUNTO_Y_COMA | THROW Expresion PUNTO_Y_COMA | TRY Bloque ClausulasCapturaOpt FinalmenteOpt | SentenciaDeExpresion | PUNTO_Y_COMA
+IDENTIFICADOR_OPC -> IDENTIFICADOR | ε
+ExpresionOpt -> Expresion | ε
+ClausulasCapturaOpt -> ClausulasCaptura | ε
+ClausulasCaptura -> ClausulaCaptura ClausulasCaptura | ClausulaCaptura
+ClausulaCaptura -> CATCH PARENTESIS_IZQ ParametroFormalCaptura PARENTESIS_DER Bloque
+ParametroFormalCaptura -> Tipo IdentificadorDeclaradorVariable
+FinalmenteOpt -> FINALLY Bloque | ε
+InicializacionParaOpt -> InicializacionPara | ε
+InicializacionPara -> DeclaracionVarLocal | ListaExpresiones
+DeclaracionVarLocal -> Modificadores Tipo DeclaradoresDeVariable
+CondicionParaOpt -> Expresion | ε
+ActualizacionParaOpt -> ListaExpresiones | ε
+ListaExpresiones -> Expresion | Expresion COMA ListaExpresiones
+ParaCadaVariable -> ModificadoresParametroOpt Tipo IDENTIFICADOR
+SentenciaDeExpresion -> ExpresionDeSentencia PUNTO_Y_COMA
+ExpresionDeSentencia -> Asignacion | InvocacionDeMetodo | ExpresionCreacionInstanciaClase
+Asignacion -> LadoIzquierdo ASIGNACION Expresion | ExpresionCondicional
+ExpresionCondicional -> ExpresionOrCondicional | ExpresionOrCondicional QUESTION Expresion DOS_PUNTOS ExpresionCondicional
+ExpresionOrCondicional -> ExpresionAndCondicional | ExpresionOrCondicional OR ExpresionAndCondicional
+ExpresionAndCondicional -> ExpresionOrInclusivo | ExpresionAndCondicional AND ExpresionOrInclusivo
+ExpresionOrInclusivo -> ExpresionOrExclusivo | ExpresionOrInclusivo BITOR ExpresionOrExclusivo
+ExpresionOrExclusivo -> ExpresionAnd | ExpresionOrExclusivo BITXOR ExpresionAnd
+ExpresionAnd -> ExpresionIgualdad | ExpresionAnd BITAND ExpresionIgualdad
+ExpresionIgualdad -> ExpresionRelacional | ExpresionIgualdad IGUAL ExpresionRelacional | ExpresionIgualdad DIFERENTE ExpresionRelacional
+ExpresionRelacional -> ExpresionDesplazamiento | ExpresionRelacional MENOR_QUE ExpresionDesplazamiento | ExpresionRelacional MAYOR_QUE ExpresionDesplazamiento | ExpresionRelacional MENOR_IGUAL ExpresionDesplazamiento | ExpresionRelacional MAYOR_IGUAL ExpresionDesplazamiento | ExpresionRelacional INSTANCEOF Tipo
+ExpresionDesplazamiento -> ExpresionAditiva | ExpresionDesplazamiento LSHIFT ExpresionAditiva | ExpresionDesplazamiento RSHIFT ExpresionAditiva | ExpresionDesplazamiento URSHIFT ExpresionAditiva
+ExpresionAditiva -> ExpresionMultiplicativa | ExpresionAditiva SUMA ExpresionMultiplicativa | ExpresionAditiva RESTA ExpresionMultiplicativa
+ExpresionMultiplicativa -> ExpresionUnaria | ExpresionMultiplicativa MULTIPLICACION ExpresionUnaria | ExpresionMultiplicativa DIVISION ExpresionUnaria | ExpresionMultiplicativa MOD ExpresionUnaria
+ExpresionUnaria -> SUMA ExpresionUnaria | RESTA ExpresionUnaria | NOT ExpresionUnaria | TILDE ExpresionUnaria | ExpresionPostfija
+ExpresionPostfija -> Primario OperadorPostfijoOpt
+OperadorPostfijoOpt -> OperadorPostfijo OperadorPostfijoOpt | ε
+OperadorPostfijo -> PARENTESIS_IZQ ListaArgumentosOpt PARENTESIS_DER | PUNTO IDENTIFICADOR | PUNTO CLASS | CORCHETE_IZQ Expresion CORCHETE_DER
+Primario -> LITERAL_ENTERA | LITERAL_FLOTANTE | LITERAL_CADENA | TRUE | FALSE | NULL | PARENTESIS_IZQ Expresion PARENTESIS_DER | THIS | SUPER MiembroSuperOpt | IDENTIFICADOR | NEW Tipo RestoCreadorDeArreglo | NEW TipoClaseOInterfaz PARENTESIS_IZQ ListaArgumentosOpt PARENTESIS_DER CuerpoClaseOpt
+MiembroSuperOpt -> PUNTO IDENTIFICADOR PARENTESIS_IZQ ListaArgumentosOpt PARENTESIS_DER | ε
+ExpresionCreacionInstanciaClase -> NEW TipoClaseOInterfaz PARENTESIS_IZQ ListaArgumentosOpt PARENTESIS_DER CuerpoClaseOpt
+CuerpoClaseOpt -> CuerpoClase | ε
+ListaArgumentosOpt -> ListaArgumentos | ε
+ListaArgumentos -> Expresion | Expresion COMA ListaArgumentos
+LadoIzquierdo -> NombreDeExpresion | AccesoCampo | AccesoArreglo
+NombreDeExpresion -> IDENTIFICADOR
+NombreDeExpresion -> NombreDeExpresion PUNTO IDENTIFICADOR
+AccesoCampo -> Primario PUNTO IDENTIFICADOR
+AccesoArreglo -> Primario CORCHETE_IZQ Expresion CORCHETE_DER
+IdentificadorDeclaradorVariable -> IDENTIFICADOR DimensionesVarOpt
+DimensionesVarOpt -> CORCHETE_IZQ CORCHETE_DER DimensionesVarOpt | ε
+Tipo -> TipoPrimitivo DimensionesTipoOpt | TipoClaseOInterfaz DimensionesTipoOpt
+DimensionesTipoOpt -> CORCHETE_IZQ CORCHETE_DER DimensionesTipoOpt | ε
+TipoPrimitivo -> BOOLEAN | BYTE | SHORT | INT | LONG | CHAR | FLOAT | DOUBLE
+TipoClaseOInterfaz -> NombreCalificado ArgumentosTipoOpt
+ArgumentosTipoOpt -> ArgumentosTipo | ε
+ArgumentosTipo -> MENOR ListaArgumentosTipo MAYOR
+ListaArgumentosTipo -> Tipo | Tipo COMA ListaArgumentosTipo
+NombreCalificado -> IDENTIFICADOR
+NombreCalificado -> NombreCalificado PUNTO IDENTIFICADOR
+ListaNombresCalificados -> NombreCalificado | NombreCalificado COMA ListaNombresCalificados
+ClausulaLanzaOpt -> THROWS ListaNombresCalificados | ε
+CuerpoEnumeracion -> LLAVE_IZQ ConstantesEnumeracionOpt DeclaracionesCuerpoEnumOpt LLAVE_DER
+ConstantesEnumeracionOpt -> ConstantesEnumeracion | ε
+ConstantesEnumeracion -> ConstanteEnumeracion | ConstanteEnumeracion COMA ConstantesEnumeracion
+ConstanteEnumeracion -> IDENTIFICADOR ArgumentosConstanteEnumOpt CuerpoClaseOpt
+ArgumentosConstanteEnumOpt -> PARENTESIS_IZQ ListaArgumentosOpt PARENTESIS_DER | ε
+DeclaracionesCuerpoEnumOpt -> COMA DeclaracionesCuerpoEnum | DeclaracionesCuerpoEnum | ε
+DeclaracionesCuerpoEnum -> DeclaracionCuerpoClase DeclaracionesCuerpoClase
+CuerpoInterfaz -> LLAVE_IZQ DeclaracionesMiembroInterfazOpt LLAVE_DER
+DeclaracionesMiembroInterfazOpt -> DeclaracionesMiembroInterfaz | ε
+DeclaracionesMiembroInterfaz -> DeclaracionMiembroInterfaz DeclaracionesMiembroInterfaz | DeclaracionMiembroInterfaz
+DeclaracionMiembroInterfaz -> Modificadores DeclaracionMetodoDeInterfaz | DeclaracionCampo | DeclaracionClase | DeclaracionInterfaz
+DeclaracionMetodoDeInterfaz -> TipoOVacio IDENTIFICADOR PARENTESIS_IZQ ListaParametrosFormalesOpt PARENTESIS_DER ClausulaLanzaOpt CuerpoMetodoOpt
+CuerpoMetodoOpt -> CuerpoMetodo | ε
+RestoCreadorDeArreglo -> CORCHETE_IZQ Expresion CORCHETE_DER DimensionesArregloOpt | CORCHETE_IZQ CORCHETE_DER DimensionesArregloOpt
+DimensionesArregloOpt -> CORCHETE_IZQ CORCHETE_DER DimensionesArregloOpt | ε
+InicializacionDeclaradorDeVariable -> ASIGNACION InicializadorVariable | ε
+ListaTipos -> Tipo | Tipo COMA ListaTipos
+InvocacionDeMetodo -> Primario PUNTO IDENTIFICADOR PARENTESIS_IZQ ListaArgumentosOpt PARENTESIS_DER | IDENTIFICADOR PARENTESIS_IZQ ListaArgumentosOpt PARENTESIS_DER | SUPER PUNTO IDENTIFICADOR PARENTESIS_IZQ ListaArgumentosOpt PARENTESIS_DER | NombreDeExpresion PUNTO IDENTIFICADOR PARENTESIS_IZQ ListaArgumentosOpt PARENTESIS_DER
+Expresion -> Asignacion
+TOKEN_EOF -> EOF
