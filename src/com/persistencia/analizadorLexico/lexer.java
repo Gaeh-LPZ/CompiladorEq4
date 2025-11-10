@@ -125,7 +125,7 @@ public class lexer {
                 } else if (match('=')) {
                     aniadirToken(tipoToken.MENOR_IGUAL);  // <=
                 } else {
-                    aniadirToken(tipoToken.MENOR);  // < (también MENOR_QUE para comparaciones)
+                    aniadirToken(tipoToken.MENOR_QUE);  // < (también MENOR_QUE para comparaciones)
                 }
                 break;
 
@@ -139,7 +139,7 @@ public class lexer {
                 } else if (match('=')) {
                     aniadirToken(tipoToken.MAYOR_IGUAL);  // >=
                 } else {
-                    aniadirToken(tipoToken.MAYOR);  // > (también MAYOR_QUE para comparaciones)
+                    aniadirToken(tipoToken.MAYOR_QUE);  // > (también MAYOR_QUE para comparaciones)
                 }
                 break;
 
