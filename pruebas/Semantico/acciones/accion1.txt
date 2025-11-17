@@ -1,0 +1,5 @@
+D->T id L ; { D.trad = "var" + id.valex + L.trad + ":" + T.trad + ";" }
+L->, id L { L.trad = "," + id.valex + L.trad }
+L->ε { L.trad = "" }
+T->float { T.trad = "real" }
+T->int { T.trad = "integer" }

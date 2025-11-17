@@ -1,0 +1,10 @@
+S V V′ T
+int char float id [ ] ; num
+S'->S $
+S->T V ;
+V->id V′
+V′->[ num ] V′
+V′->ε
+T->int
+T->char
+T->float

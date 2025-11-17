@@ -7,6 +7,7 @@ import com.presentacion.coleccionCanonica.ColeccionCanonicaPanel;
 import com.presentacion.primerosSiguientes.PrimerosSiguientesPanel;
 import com.presentacion.tablaAnalisisSintacticoLR.TablaLRPanel;
 import com.presentacion.AnalizadorProyectoFinal.AnalizadorProyectoFinalPanel;
+import com.presentacion.analizadorSemantico.analizadorSemanticoPanel;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -165,6 +166,9 @@ public class VentanaPrincipal extends JFrame {
                 case "analizador_sintactico_proyecto":
                     openAnalyzerTab("Analizador Sintáctico LR - Proyecto Final", new AnalizadorProyectoFinalPanel());
                     break;   
+                case "analizador_semantico":
+                    openAnalyzerTab("Analizador Semántico LR", new analizadorSemanticoPanel());
+                    break;
 
                 default:
                     String content = dataProvider.getAlgorithmDescription(cmd);
@@ -425,6 +429,7 @@ class DefaultDataProvider implements DataProvider {
                 return "Analizador léxico (placeholder):\n\nEjecuta análisis léxico sobre texto de entrada.";
             case "analizador_semantico":
                 return "Analizador semántico (placeholder):\n\nChequeos semánticos y reporte de errores.";
+                
             default:
                 return "Comando: " + key + "\n\n(No hay contenido preparado para este comando.)";
         }

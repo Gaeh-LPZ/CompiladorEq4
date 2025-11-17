@@ -1,0 +1,7 @@
+S->T V ; { S.trad = "var " + V.trad + " " + T.trad + ";" }
+V->id V' { if (V'.trad != "") { V.trad = id.valex + ": array[" + V'.trad + "] of" } else { V.trad = id.valex + ":" } }
+V'->[ num ] V' { if (V'.trad != "") { V'.trad = "0.." + (num.valex-1) + ", " + V'.trad } else { V'.trad = "0.." + (num.valex-1) } }
+V'->ε { V'.trad = "" }
+T->int { T.trad = "integer" }
+T->char { T.trad = "char" }
+T->float { T.trad = "real" }
