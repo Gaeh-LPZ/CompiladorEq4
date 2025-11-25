@@ -1,0 +1,68 @@
+package com;
+
+import java.util.*;
+
+public class Prueba {
+    public static void main(String[] args){
+        // Comentario de linea
+        int a,b;
+        int aptr, categ = 2;
+        int[] vec;
+        int[] aVecPtr;
+        float[] vecFloat;
+        float sueldo;
+
+        System.out.println("Teclea dos numeros enteros: ");
+
+        c = a % 2;
+
+        if (c == 0) {
+            System.out.println(c + " es par");
+        } else {
+            c - 1;
+        }
+
+        // Se comentó el switch por conflictos
+        //switch (categ) {
+        //    case 1:
+        //        nsueldo = sueldo * 1.15;
+        //        break;
+        //    case 2: 
+        //        break;
+        //    default:
+        //        nsueldo = sueldo * 1.10;
+        //}
+
+        for (i = 5; i >= 0 ; i - 1){
+            System.out.println(i + " = " + c);
+        }
+        
+        for(i = 0; i <= n; i + 1){
+            pot = 1;
+            for(j = 0; j < i; j + 1){
+                pot = pot + 2;
+            }
+            add = add + 1 / pot;
+        }
+
+        total = 0;
+        i = 0;
+        while(i <= 4 && total){
+            total = total + 2;
+            i + 1;
+        }
+
+        i = 1;
+
+        do {
+            System.out.println("Teclea la calificacion: " + i);
+            i = i - 1;
+        }while(i > 0 || calif);
+
+        return 0;
+    }
+
+    public void adicion(int a, int b) {
+        return a + b;
+    }
+}
