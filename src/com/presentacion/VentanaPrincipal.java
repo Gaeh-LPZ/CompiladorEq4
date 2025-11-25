@@ -8,6 +8,7 @@ import com.presentacion.primerosSiguientes.PrimerosSiguientesPanel;
 import com.presentacion.tablaAnalisisSintacticoLR.TablaLRPanel;
 import com.presentacion.AnalizadorProyectoFinal.AnalizadorProyectoFinalPanel;
 import com.presentacion.analizadorSemantico.analizadorSemanticoPanel;
+import com.presentacion.analizadorSemanticoFinal.analizadorSemanticoFinalPanel;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -68,11 +69,10 @@ public class VentanaPrincipal extends JFrame {
 
         CodeSnippetPanel codePanel = new CodeSnippetPanel(
                 "public class HolaMundo {\r\n"
-                + "    public static void main(String[] args) {\r\n"
-                + "        System.out.println(\"hola mundo\");\r\n"
-                + "    }\r\n"
-                + "}"
-        );
+                        + "    public static void main(String[] args) {\r\n"
+                        + "        System.out.println(\"hola mundo\");\r\n"
+                        + "    }\r\n"
+                        + "}");
         gbc.gridx = 0;
         gbc.weightx = 0.35;
         gbc.fill = GridBagConstraints.BOTH;
@@ -107,7 +107,7 @@ public class VentanaPrincipal extends JFrame {
         closeBtn.setBorder(BorderFactory.createEmptyBorder());
         closeBtn.setFocusable(false);
         closeBtn.setContentAreaFilled(false);
-        closeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); 
+        closeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         closeBtn.setForeground(FG_LIGHT);
 
         closeBtn.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -165,9 +165,12 @@ public class VentanaPrincipal extends JFrame {
                     break;
                 case "analizador_sintactico_proyecto":
                     openAnalyzerTab("Analizador Sintáctico LR - Proyecto Final", new AnalizadorProyectoFinalPanel());
-                    break;   
+                    break;
                 case "analizador_semantico":
                     openAnalyzerTab("Analizador Semántico LR", new analizadorSemanticoPanel());
+                    break;
+                case "analizador_semantico_final":
+                    openAnalyzerTab("Analizador Semántico Final", new analizadorSemanticoFinalPanel());
                     break;
 
                 default:
@@ -280,7 +283,7 @@ class ReusableMenuBar extends JMenuBar {
         parser.addActionListener(handler);
         sint.add(parser);
 
-        sint.addSeparator(); 
+        sint.addSeparator();
         JMenuItem parserProyecto = new JMenuItem("Analizador Sintáctico LR - Proyecto Final");
         parserProyecto.setActionCommand("analizador_sintactico_proyecto");
         parserProyecto.addActionListener(handler);
@@ -289,9 +292,13 @@ class ReusableMenuBar extends JMenuBar {
 
         JMenu sem = new JMenu("Analizador semántico");
         JMenuItem semItem = new JMenuItem("Analizador semántico (placeholder)");
+        JMenuItem semItemFinal = new JMenuItem("Analizador semántico Final");
         semItem.setActionCommand("analizador_semantico");
+        semItemFinal.setActionCommand("analizador_semantico_final");
+        semItemFinal.addActionListener(handler);
         semItem.addActionListener(handler);
         sem.add(semItem);
+        sem.add(semItemFinal);
         add(sem);
     }
 }
@@ -429,7 +436,9 @@ class DefaultDataProvider implements DataProvider {
                 return "Analizador léxico (placeholder):\n\nEjecuta análisis léxico sobre texto de entrada.";
             case "analizador_semantico":
                 return "Analizador semántico (placeholder):\n\nChequeos semánticos y reporte de errores.";
-                
+            case "analizador_semantico_final":
+                return "Analizador semántico Final:\n\nChequeos semánticos y reporte de errores.";
+
             default:
                 return "Comando: " + key + "\n\n(No hay contenido preparado para este comando.)";
         }
