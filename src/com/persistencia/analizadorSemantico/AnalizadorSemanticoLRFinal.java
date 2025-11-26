@@ -45,49 +45,71 @@ public class AnalizadorSemanticoLRFinal {
     public ResultadoAnalisisCompleto analizar(String rutaCodigo) throws Exception {
         System.out.println("\n🚀 ========== INICIANDO ANÁLISIS COMPLETO ==========");
 
-        // ✅ DECLARAR VARIABLES AL INICIO DEL MÉTODO
-        lr0Table.Result tableLR;
-        List<TokenSemantico> tokensSemanticos;
+        // ✅ DECLARAR VARIABLES AL INICIO
+        lr0Table.Result tableLR = null;
+        List<TokenSemantico> tokensSemanticos = new ArrayList<>();
+        List<token> tokensReales = new ArrayList<>();
+        String programa = "";
+        grammar gAug = null;
+        List<production> rules = new ArrayList<>();
 
-        // 1. Cargar gramática y acciones (hardcodeadas)
-        System.out.println("\n📖 FASE 1: Cargando gramática y acciones semánticas...");
-        cargarAcciones(RUTA_ACCIONES);
+        try {
+            // 1. Cargar gramática y acciones (hardcodeadas)
+            System.out.println("\n📖 FASE 1: Cargando gramática y acciones semánticas...");
+            cargarAcciones(RUTA_ACCIONES);
 
-        // 2. Construir tabla LR
-        System.out.println("\n📊 FASE 2: Construyendo tabla de análisis sintáctico LR(0)...");
-        tableLR = lr0Table.buildFromFile(RUTA_GRAMATICA);
-        System.out.println("   ✅ Tabla LR construida exitosamente");
+            // 2. Construir tabla LR
+            System.out.println("\n📊 FASE 2: Construyendo tabla de análisis sintáctico LR(0)...");
+            tableLR = lr0Table.buildFromFile(RUTA_GRAMATICA);
+            System.out.println("   ✅ Tabla LR construida exitosamente");
 
-        // 3. Análisis léxico REAL (usando tu lexer del primer parcial)
-        System.out.println("\n🔤 FASE 3: Análisis Léxico...");
-        String programa = Files.readString(Path.of(rutaCodigo));
-        lexer analizadorLexico = new lexer(programa);
-        List<token> tokensReales = analizadorLexico.scanTokens();
-        System.out.println("   ✅ Tokens generados: " + tokensReales.size());
+            // 3. Análisis léxico REAL
+            System.out.println("\n🔤 FASE 3: Análisis Léxico...");
+            programa = Files.readString(Path.of(rutaCodigo));
+            lexer analizadorLexico = new lexer(programa);
+            tokensReales = analizadorLexico.scanTokens();
+            System.out.println("   ✅ Tokens generados: " + tokensReales.size());
 
-        // 4. Construir tabla de símbolos
-        System.out.println("\n📋 FASE 4: Construyendo tabla de símbolos...");
-        construirTablaSimbolos(tokensReales);
-        System.out.println("   ✅ Símbolos únicos: " + tablaSimbolos.size());
+            // 4. Construir tabla de símbolos
+            System.out.println("\n📋 FASE 4: Construyendo tabla de símbolos...");
+            construirTablaSimbolos(tokensReales);
+            System.out.println("   ✅ Símbolos únicos: " + tablaSimbolos.size());
 
-        // 5. Detectar errores léxicos
-        System.out.println("\n⚠️  FASE 5: Verificando errores léxicos...");
-        detectarErroresLexicos(tokensReales);
+            // 5. Detectar errores léxicos
+            System.out.println("\n⚠️  FASE 5: Verificando errores léxicos...");
+            detectarErroresLexicos(tokensReales);
 
-        // 6. Convertir tokens a formato para análisis sintáctico
-        System.out.println("\n🔄 FASE 6: Convirtiendo tokens para análisis sintáctico...");
-        tokensSemanticos = convertirTokens(tokensReales);
+            // 6. Convertir tokens
+            System.out.println("\n🔄 FASE 6: Convirtiendo tokens para análisis sintáctico...");
+            tokensSemanticos = convertirTokens(tokensReales);
 
-        // 7. Cargar producciones
-        System.out.println("\n📝 FASE 7: Cargando producciones de la gramática...");
-        grammar gAug = grammar.parseAugmentedGrammar(RUTA_GRAMATICA);
-        List<production> rules = obtenerProducciones(gAug);
-        System.out.println("   ✅ Producciones cargadas: " + rules.size());
+            // 7. Cargar producciones
+            System.out.println("\n📝 FASE 7: Cargando producciones de la gramática...");
+            gAug = grammar.parseAugmentedGrammar(RUTA_GRAMATICA);
+            rules = obtenerProducciones(gAug);
+            System.out.println("   ✅ Producciones cargadas: " + rules.size());
 
-        // 8. Análisis sintáctico-semántico
-        System.out.println("\n⚙️  FASE 8: Análisis Sintáctico-Semántico LR...");
-        analizarConSemantica(tableLR, tokensSemanticos, rules);
-        System.out.println("   ✅ Análisis completado - Pasos: " + corrida.size());
+            // 8. Análisis sintáctico-semántico (PUEDE FALLAR)
+            System.out.println("\n⚙️  FASE 8: Análisis Sintáctico-Semántico LR...");
+            try {
+                analizarConSemantica(tableLR, tokensSemanticos, rules);
+                System.out.println("   ✅ Análisis completado - Pasos: " + corrida.size());
+            } catch (Exception ex) {
+                // ✅ CAPTURAR ERROR PERO CONTINUAR CON RESULTADOS PARCIALES
+                System.err.println("   ❌ ERROR en análisis sintáctico-semántico: " + ex.getMessage());
+                erroresSemanticos.add("Error sintáctico-semántico: " + ex.getMessage());
+
+                // NO lanzar excepción, continuar con resultados parciales
+            }
+
+        } catch (Exception ex) {
+            // ✅ Error en fases tempranas (léxico, carga de archivos, etc.)
+            System.err.println("\n❌ ERROR CRÍTICO en fase inicial: " + ex.getMessage());
+            erroresSemanticos.add("Error crítico: " + ex.getMessage());
+            ex.printStackTrace();
+
+            // Continuar para retornar lo que se haya podido procesar
+        }
 
         // ============ DEBUG: VER QUÉ HAY EN LA PILA ============
         System.out.println("\n🔍 DEBUG: Contenido de la pila semántica:");
@@ -105,80 +127,66 @@ public class AnalizadorSemanticoLRFinal {
             }
         }
 
-        System.out.println("\n🔍 DEBUG: Contenido de codigoObjeto StringBuilder:");
-        System.out.println("   Longitud: " + codigoObjeto.length());
-        if (codigoObjeto.length() > 0) {
-            System.out.println("   Contenido:");
-            System.out.println(codigoObjeto.toString());
-        }
-
-        System.out.println("\n🔍 DEBUG: Últimos 10 pasos con salida semántica:");
-        int inicio = Math.max(0, corrida.size() - 10);
-        for (int i = inicio; i < corrida.size(); i++) {
-            PasoAnalisis paso = corrida.get(i);
-            if (paso.getSalida() != null && !paso.getSalida().isEmpty()) {
-                System.out.println("   Paso " + paso.getPaso() + ": " + paso.getSalida());
-            }
-        }
-
         // 9. Generar código objeto C++
         System.out.println("\n🎯 FASE 9: Generando código objeto (C++)...");
-
         String codigoGenerado = "";
 
-        // El tope de la pila contiene el resultado final (ya debería estar evaluado)
-        if (!pilaSemantica.isEmpty()) {
-            Object topePila = pilaSemantica.peek();
-            codigoGenerado = safeString(topePila);
+        try {
+            if (!pilaSemantica.isEmpty()) {
+                Object topePila = pilaSemantica.peek();
+                codigoGenerado = safeString(topePila);
 
-            System.out.println("   ✅ Código extraído de la pila semántica");
-            System.out.println("   📏 Longitud: " + codigoGenerado.length() + " caracteres");
-        } else {
-            System.out.println("   ❌ ERROR: Pila semántica vacía");
-        }
-
-        // Limpiar duplicados de includes
-        if (!codigoGenerado.isEmpty()) {
-            String[] lineas = codigoGenerado.split("\n");
-            Set<String> includesVistos = new HashSet<>();
-            StringBuilder codigoLimpio = new StringBuilder();
-
-            for (String linea : lineas) {
-                String lineaTrim = linea.trim();
-
-                if (lineaTrim.startsWith("#include")) {
-                    if (!includesVistos.contains(lineaTrim)) {
-                        includesVistos.add(lineaTrim);
-                        codigoLimpio.append(linea).append("\n");
-                    }
-                } else if (lineaTrim.equals("using namespace std;")) {
-                    if (!includesVistos.contains("using")) {
-                        includesVistos.add("using");
-                        codigoLimpio.append(linea).append("\n");
-                    }
-                } else {
-                    codigoLimpio.append(linea).append("\n");
-                }
+                System.out.println("   ✅ Código extraído de la pila semántica");
+                System.out.println("   📏 Longitud: " + codigoGenerado.length() + " caracteres");
+            } else {
+                System.out.println("   ⚠️  Pila semántica vacía - no hay código generado");
             }
 
-            codigoGenerado = codigoLimpio.toString().trim();
+            // Limpiar duplicados de includes
+            if (!codigoGenerado.isEmpty()) {
+                // Limpiar duplicados de includes
+                codigoGenerado = limpiarCodigoGenerado(codigoGenerado);
+
+                // Post-procesar conversiones finales
+                codigoGenerado = postProcesarCodigo(codigoGenerado);
+
+                // Formatear correctamente
+                codigoGenerado = formatearCodigoCpp(codigoGenerado);
+            }
+
+            if (codigoGenerado.isEmpty() || codigoGenerado.contains("IDENTIFICADOR.")
+                    || codigoGenerado.contains(".trad")) {
+                System.out.println("   ⚠️  Código contiene referencias sin evaluar o está vacío");
+                if (!erroresSemanticos.isEmpty()) {
+                    codigoGenerado = "// Análisis interrumpido por errores\n// No se pudo generar código C++ completo\n\n// Errores:\n";
+                    for (String error : erroresSemanticos) {
+                        codigoGenerado += "// - " + error + "\n";
+                    }
+                }
+            } else {
+                System.out.println("   ✅ Código generado exitosamente");
+            }
+
+            if (!codigoGenerado.isEmpty()) {
+                System.out.println("\n   📄 CÓDIGO C++ GENERADO:");
+                System.out.println("   " + "=".repeat(60));
+                System.out.println(codigoGenerado);
+                System.out.println("   " + "=".repeat(60));
+            }
+
+        } catch (Exception ex) {
+            System.err.println("   ❌ Error al generar código C++: " + ex.getMessage());
+            erroresSemanticos.add("Error al generar código: " + ex.getMessage());
         }
 
-        if (codigoGenerado.isEmpty() || codigoGenerado.contains("IDENTIFICADOR.") || codigoGenerado.contains(".trad")) {
-            System.out.println("   ⚠️  WARNING: El código contiene referencias sin evaluar");
-            System.out.println("   🔍 Muestra: " + codigoGenerado.substring(0, Math.min(200, codigoGenerado.length())));
-            codigoGenerado = "// Código C++ generado\n// ERROR: Referencias no evaluadas correctamente\n// Verificar evaluarExpresion()";
-            System.out.println("   ❌ No se pudo generar código C++ válido");
-        } else {
-            System.out.println("   ✅ Código generado exitosamente");
-        }
+        // ✅ SIEMPRE RETORNAR UN RESULTADO (incluso si hay errores)
+        System.out.println("\n✅ Retornando resultado del análisis");
+        System.out.println("   - Tokens: " + tokensSemanticos.size());
+        System.out.println("   - Símbolos: " + tablaSimbolos.size());
+        System.out.println("   - Pasos de corrida: " + corrida.size());
+        System.out.println("   - Errores: " + erroresSemanticos.size());
+        System.out.println("   - Código generado: " + (codigoGenerado.isEmpty() ? "NO" : "SÍ"));
 
-        System.out.println("\n   📄 CÓDIGO C++ GENERADO:");
-        System.out.println("   " + "=".repeat(60));
-        System.out.println(codigoGenerado);
-        System.out.println("   " + "=".repeat(60));
-
-        // ✅ RETURN AL FINAL DEL MÉTODO (mismo nivel que las declaraciones iniciales)
         return new ResultadoAnalisisCompleto(
                 tokensSemanticos,
                 corrida,
@@ -762,22 +770,22 @@ public class AnalizadorSemanticoLRFinal {
                 String lexema = (ptr < tokens.size()) ? tokens.get(ptr).lexema : "$";
                 int linea = (ptr < tokens.size()) ? tokens.get(ptr).linea : -1;
 
+                // ✅ Agregar paso de error a la corrida
                 corrida.add(new PasoAnalisis(paso++, pilaStr, entradaStr,
-                        "ERROR", "Error sintáctico"));
+                        "ERROR", "Error sintáctico en línea " + linea));
 
                 String error = "Error sintáctico en línea " + linea + ": inesperado '" + lexema + "'";
                 erroresSemanticos.add(error);
+
+                // ✅ LANZAR excepción para que sea capturada en analizar()
                 throw new Exception(error);
             }
 
             if (accion.startsWith("d")) {
                 // DESPLAZAMIENTO
-                // DESPLAZAMIENTO
                 int j = Integer.parseInt(accion.substring(1));
 
-                // ============ FIX: Empujar el VALOR del token (con comillas para strings)
-                // ============
-                Object valor = tokens.get(ptr).valor; // ✅ Usar valor que ya tiene las comillas
+                Object valor = tokens.get(ptr).valor;
                 pilaSemantica.push(valor);
 
                 pilaSintactica.push(simboloActual);
@@ -803,7 +811,7 @@ public class AnalizadorSemanticoLRFinal {
                     pilaSintactica.pop(); // estado
                 }
 
-                // Ejecutar acción semántica (con protección de pila)
+                // Ejecutar acción semántica
                 String salidaSemantica = ejecutarAccion(prod, betaLen);
 
                 int j = (int) pilaSintactica.peek();
@@ -811,7 +819,11 @@ public class AnalizadorSemanticoLRFinal {
                 Integer nuevoEstado = table.gotoTable.getOrDefault(j, Map.of()).get(prod.left);
 
                 if (nuevoEstado == null) {
-                    throw new Exception("GOTO[" + j + ", " + prod.left + "] no definido");
+                    String error = "GOTO[" + j + ", " + prod.left + "] no definido";
+                    corrida.add(new PasoAnalisis(paso++, pilaStr, entradaStr,
+                            "ERROR", error));
+                    erroresSemanticos.add(error);
+                    throw new Exception(error);
                 }
 
                 pilaSintactica.push(nuevoEstado);
@@ -836,29 +848,71 @@ public class AnalizadorSemanticoLRFinal {
     }
 
     /**
-     * Convertir println(args) a cout << args << endl
+     * Convertir println a cout - VERSIÓN MEJORADA
      */
-    private String convertirPrintlnACout(String traduccion) {
-        // Si contiene println, convertirlo a cout
-        if (traduccion.contains("println(")) {
-            // Extraer el contenido entre paréntesis
-            int inicio = traduccion.indexOf("println(") + 8;
-            int fin = traduccion.lastIndexOf(")");
+    private String convertirPrintlnACout(String invocacion) {
+        // Patrones posibles:
+        // 1. objeto.println(args)
+        // 2. println(args)
 
-            if (inicio > 8 && fin > inicio) {
-                String argumentos = traduccion.substring(inicio, fin);
-                return "cout << " + argumentos + " << endl";
-            }
+        // Si ya es cout, no convertir
+        if (invocacion.contains("cout")) {
+            return invocacion;
         }
 
-        return traduccion;
+        // Buscar patrón: cualquier_cosa.println(argumentos)
+        if (invocacion.contains("println(")) {
+            int inicio = invocacion.indexOf("println(");
+            int parentesisInicio = inicio + 8; // después de "println("
+
+            // Encontrar el paréntesis de cierre correspondiente
+            int nivel = 1;
+            int fin = -1;
+            for (int i = parentesisInicio; i < invocacion.length(); i++) {
+                char c = invocacion.charAt(i);
+                if (c == '(')
+                    nivel++;
+                else if (c == ')') {
+                    nivel--;
+                    if (nivel == 0) {
+                        fin = i;
+                        break;
+                    }
+                }
+            }
+
+            if (fin == -1) {
+                // No se encontró cierre, retornar original
+                return invocacion;
+            }
+
+            // Extraer argumentos
+            String argumentos = invocacion.substring(parentesisInicio, fin);
+
+            // Convertir argumentos (manejo de concatenación con +)
+            String coutArgs = convertirArgumentosACout(argumentos);
+
+            return coutArgs;
+        }
+
+        return invocacion;
     }
 
     /**
-     * Ejecutar acción semántica - VERSIÓN CORREGIDA Y COMPLETA
+     * MÉTODO ACTUALIZADO: ejecutarAccion
+     * Ahora pasa la producción completa
      */
     private String ejecutarAccion(production prod, int betaLen) {
         String produccionStr = prod.left + " -> " + String.join(" ", prod.right);
+        if (produccionStr.contains("IF") && produccionStr.contains("ELSE")) {
+            System.out.println("\n🔍 DEBUG IF-ELSE:");
+            System.out.println("   Producción: " + produccionStr);
+            System.out.println("   Valores en pila:");
+            for (int i = 0; i < Math.min(betaLen, pilaSemantica.size()); i++) {
+                Object val = pilaSemantica.get(pilaSemantica.size() - betaLen + i);
+                System.out.println("      [" + i + "]: " + val);
+            }
+        }
         produccionStr = normalizarPrima(produccionStr);
 
         AccionSemantica accion = acciones.get(produccionStr);
@@ -899,15 +953,15 @@ public class AnalizadorSemanticoLRFinal {
             return "";
         }
 
-        // ============ EVALUAR LA ACCIÓN SEMÁNTICA ============
+        // ============ EVALUAR LA ACCIÓN SEMÁNTICA CON CONVERSIONES ============
         String codigo = accion.getCodigo();
-        String resultado = evaluarAccionSemantica(codigo, prod.right, valores);
+        // ✅ PASAR LA PRODUCCIÓN COMPLETA
+        String resultado = evaluarAccionSemanticaConConversiones(codigo, prod.right, valores, prod);
 
         // ============ CRÍTICO: Pushear resultado evaluado ============
         pilaSemantica.push(resultado);
 
         // ============ RETORNAR PARA LA CORRIDA (con formato) ============
-        // Formato: "NoTerminal.trad = valor"
         String salidaParaCorrida = prod.left + ".trad = " + resultado;
 
         return salidaParaCorrida;
@@ -933,6 +987,210 @@ public class AnalizadorSemanticoLRFinal {
         String resultado = evaluarExpresion(expresion, contexto);
 
         return resultado;
+    }
+
+    /**
+     * Evaluar acción semántica CON conversiones específicas según el contexto
+     * VERSIÓN CORREGIDA - Aplica conversiones solo donde corresponde
+     */
+    private String evaluarAccionSemanticaConConversiones(String codigo, List<String> simbolos,
+            List<Object> valores, production prod) {
+        // 1. Evaluar la expresión normalmente (reemplazar referencias)
+        String resultado = evaluarAccionSemantica(codigo, simbolos, valores);
+
+        // 2. Aplicar conversiones ESPECÍFICAS según el no-terminal
+
+        // ============ CONVERSIÓN DE println → cout ============
+        if (prod.left.equals("InvocacionDeMetodo")) {
+            // Buscar si hay un IDENTIFICADOR con valor "println"
+            boolean esPrintln = false;
+            int indicePrintln = -1;
+
+            for (int i = 0; i < simbolos.size(); i++) {
+                String simbolo = simbolos.get(i);
+                if (simbolo.equals("IDENTIFICADOR") && i < valores.size()) {
+                    String valor = valores.get(i).toString();
+                    if (valor.equals("println")) {
+                        esPrintln = true;
+                        indicePrintln = i;
+                        break;
+                    }
+                }
+            }
+
+            if (esPrintln) {
+                // Convertir: objeto.println(args) → cout << args << endl
+                resultado = convertirPrintlnACout(resultado);
+            }
+        }
+
+        // ============ CONVERSIÓN DE CONDICIONES BOOLEANAS ============
+        // Solo en: while, if, do-while
+        if (prod.left.equals("Sentencia")) {
+            // Detectar si es una sentencia de control con condición
+            if (codigo.contains("while (") || codigo.contains("if (")) {
+                resultado = convertirCondicionesEnSentencia(resultado);
+            }
+        }
+
+        // ============ CONVERSIÓN DE INCREMENTOS/DECREMENTOS ============
+        // Solo en: actualizaciones de for, expresiones de sentencia
+        if (prod.left.equals("ActualizacionParaOpt") ||
+                prod.left.equals("ListaExpresiones")) {
+            resultado = convertirIncrementoDecrementoContextual(resultado);
+        }
+
+        // ============ CONVERSIÓN DE ASIGNACIONES CON INCREMENTO ============
+        // Para casos como: i = i + 1 → i++
+        if (prod.left.equals("ExpresionDeSentencia") ||
+                prod.left.equals("Asignacion")) {
+            resultado = convertirAsignacionIncremento(resultado);
+        }
+
+        // ============ LIMPIAR ARTEFACTOS ============
+        // Remover "!= 0" duplicados
+        resultado = resultado.replaceAll("(!= 0)\\s+!= 0", "$1");
+
+        return resultado;
+    }
+
+    /**
+     * Convertir println en el código ya generado
+     * println(args) → cout << args << endl
+     */
+    private String convertirPrintlnEnResultado(String codigo) {
+        // Patrón: println(cualquier cosa)
+        while (codigo.contains("println(")) {
+            int inicio = codigo.indexOf("println(");
+            int parentesisInicio = inicio + 7; // después de "println"
+
+            // Encontrar el paréntesis de cierre correspondiente
+            int nivel = 0;
+            int fin = -1;
+            for (int i = parentesisInicio; i < codigo.length(); i++) {
+                if (codigo.charAt(i) == '(')
+                    nivel++;
+                else if (codigo.charAt(i) == ')') {
+                    if (nivel == 0) {
+                        fin = i;
+                        break;
+                    }
+                    nivel--;
+                }
+            }
+
+            if (fin == -1)
+                break; // No se encontró cierre
+
+            // Extraer argumentos
+            String argumentos = codigo.substring(parentesisInicio + 1, fin);
+
+            // Convertir a cout
+            String cout = convertirArgumentosACout(argumentos);
+
+            // Reemplazar println(...) por cout << ... << endl
+            String antes = codigo.substring(0, inicio);
+            String despues = codigo.substring(fin + 1);
+            codigo = antes + cout + despues;
+        }
+
+        return codigo;
+    }
+
+    /**
+     * Post-procesar el código generado - VERSIÓN MEJORADA
+     * Corrige problemas de formato y conversiones finales
+     */
+    private String postProcesarCodigo(String codigo) {
+        // 1. Arreglar "String* args" → "int argc, char* argv[]"
+        codigo = codigo.replaceAll("String\\*\\s*args", "int argc, char* argv[]");
+
+        // 2. Arreglar "void main" → "int main"
+        codigo = codigo.replaceAll("void\\s+main\\s*\\(", "int main(");
+
+        // 3. ✅ CORREGIDO: Remover static de main (con word boundary)
+        codigo = codigo.replaceAll("\\bstatic\\s+int\\s+main\\s*\\(", "int main(");
+
+        // 4. Limpiar espacios antes de punto y coma
+        codigo = codigo.replaceAll("break ;", "break;");
+        codigo = codigo.replaceAll("return ;", "return;");
+
+        // 5. Arreglar modificadores de acceso con saltos de línea incorrectos
+        codigo = codigo.replaceAll("public:\\s+static\\s*\n", "public:\n    static ");
+        codigo = codigo.replaceAll("private:\\s+static\\s*\n", "private:\n    static ");
+        codigo = codigo.replaceAll("protected:\\s+static\\s*\n", "protected:\n    static ");
+
+        // 6. Arreglar modificadores de acceso simples
+        codigo = codigo.replaceAll("public:\\s*\n", "public:\n    ");
+        codigo = codigo.replaceAll("private:\\s*\n", "private:\n    ");
+        codigo = codigo.replaceAll("protected:\\s*\n", "protected:\n    ");
+
+        // 7. Arreglar múltiples != 0 en la misma expresión
+        codigo = codigo.replaceAll("(!= 0)\\s+!= 0", "$1");
+
+        // 8. Limpiar espacios múltiples
+        codigo = codigo.replaceAll(" {2,}", " ");
+
+        // 9. Arreglar formato de llaves
+        codigo = codigo.replaceAll("\\{\\s*\n\\s*\n", "{\n");
+        codigo = codigo.replaceAll("\n\\s*\n\\s*\\}", "\n}");
+
+        // 10. Arreglar incrementos en expresiones de sentencia
+        codigo = codigo.replaceAll("(\\w+)\\s*\\+\\s*1\\s*;", "$1++;");
+        codigo = codigo.replaceAll("(\\w+)\\s*-\\s*1\\s*;", "$1--;");
+
+        // 11. Remover líneas con solo espacios
+        String[] lineas = codigo.split("\n");
+        StringBuilder resultado = new StringBuilder();
+
+        for (String linea : lineas) {
+            if (!linea.trim().isEmpty() || linea.isEmpty()) {
+                resultado.append(linea).append("\n");
+            }
+        }
+
+        return resultado.toString().trim();
+    }
+
+    /**
+     * Convertir argumentos de println a formato cout
+     * "texto" + var + " más texto" → "texto" << var << " más texto"
+     */
+    private String convertirArgumentosACout(String argumentos) {
+        if (argumentos == null || argumentos.trim().isEmpty()) {
+            return "cout << endl";
+        }
+
+        // Si ya está convertido, retornar
+        if (argumentos.contains("cout")) {
+            return argumentos;
+        }
+
+        // Dividir por + respetando comillas
+        List<String> partes = splitPorPlusMejorado(argumentos);
+
+        if (partes.isEmpty()) {
+            return "cout << endl";
+        }
+
+        StringBuilder resultado = new StringBuilder("cout");
+
+        for (String parte : partes) {
+            parte = parte.trim();
+            if (!parte.isEmpty()) {
+                resultado.append(" << ").append(parte);
+            }
+        }
+
+        resultado.append(" << endl");
+        return resultado.toString();
+    }
+
+    /**
+     * Detectar si el código es una condición
+     */
+    private boolean esCondicion(String codigo) {
+        return codigo.contains("while") || codigo.contains("if") || codigo.contains("for");
     }
 
     /**
@@ -1363,6 +1621,532 @@ public class AnalizadorSemanticoLRFinal {
         public String toString() {
             return produccion + " { " + codigo + " }";
         }
+    }
+
+    /**
+     * Convertir declaración de array de Java a C++
+     * int[] x → int* x
+     * int[][] x → int** x
+     */
+    private String convertirDeclaracionArray(String tipo, String dimensiones) {
+        if (dimensiones.isEmpty()) {
+            return tipo;
+        }
+
+        // Contar número de []
+        int niveles = (dimensiones.length() - dimensiones.replace("[]", "").length()) / 2;
+
+        // Generar punteros: int[] → int*
+        StringBuilder resultado = new StringBuilder(tipo);
+        for (int i = 0; i < niveles; i++) {
+            resultado.append("*");
+        }
+
+        return resultado.toString();
+    }
+
+    /**
+     * Convertir expresiones de incremento/decremento
+     * i + 1 → i++ (cuando está sola en una sentencia)
+     * i - 1 → i--
+     */
+    private String convertirIncrementoDecremento(String expresion) {
+        // Regex para detectar: variable + 1 o variable - 1
+        if (expresion.matches("\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\+\\s*1\\s*")) {
+            String variable = expresion.replaceAll("\\s*\\+\\s*1\\s*", "").trim();
+            return variable + "++";
+        }
+
+        if (expresion.matches("\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*-\\s*1\\s*")) {
+            String variable = expresion.replaceAll("\\s*-\\s*1\\s*", "").trim();
+            return variable + "--";
+        }
+
+        return expresion;
+    }
+
+    /**
+     * Convertir condiciones booleanas implícitas
+     * while(total) → while(total != 0)
+     * while(i > 0 || calif) → while(i > 0 || calif != 0)
+     */
+    private String convertirCondicionBooleana(String condicion) {
+        condicion = condicion.trim();
+
+        // Si ya tiene operador de comparación, retornar tal cual
+        if (condicion.matches(".*[<>=!]=.*") || condicion.matches(".*[<>].*")) {
+            // Verificar sub-expresiones en && y ||
+            String[] partes;
+
+            if (condicion.contains("&&")) {
+                partes = condicion.split("&&");
+                StringBuilder resultado = new StringBuilder();
+                for (int i = 0; i < partes.length; i++) {
+                    if (i > 0)
+                        resultado.append(" && ");
+                    resultado.append(convertirCondicionBooleana(partes[i]));
+                }
+                return resultado.toString();
+            }
+
+            if (condicion.contains("||")) {
+                partes = condicion.split("\\|\\|");
+                StringBuilder resultado = new StringBuilder();
+                for (int i = 0; i < partes.length; i++) {
+                    if (i > 0)
+                        resultado.append(" || ");
+                    resultado.append(convertirCondicionBooleana(partes[i]));
+                }
+                return resultado.toString();
+            }
+
+            return condicion;
+        }
+
+        // Si es un identificador solo, agregar != 0
+        if (condicion.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+            return condicion + " != 0";
+        }
+
+        return condicion;
+    }
+
+    /**
+     * Validar tipo de retorno de método vs expresión retornada
+     */
+    private void validarRetornoMetodo(String tipoRetorno, String expresionRetorno, int linea) {
+        if (tipoRetorno.equals("void") && !expresionRetorno.isEmpty() && !expresionRetorno.equals("0")) {
+            String error = "Línea " + linea + ": Método void no puede retornar un valor";
+            erroresSemanticos.add(error);
+            System.err.println("   ❌ " + error);
+        }
+    }
+
+    /**
+     * Convertir System.out.println() a cout
+     * System.out.println("texto") → cout << "texto" << endl
+     * System.out.println(variable + " texto") → cout << variable << " texto" <<
+     * endl
+     */
+    private String convertirPrintln(String argumentos) {
+        if (argumentos == null || argumentos.isEmpty()) {
+            return "cout << endl";
+        }
+
+        // Si ya contiene "cout", no convertir de nuevo
+        if (argumentos.contains("cout")) {
+            return argumentos;
+        }
+
+        // Procesar concatenaciones con + (respetando strings)
+        if (argumentos.contains("+")) {
+            List<String> partes = splitPorPlusMejorado(argumentos); // ✅ List<String>
+            StringBuilder resultado = new StringBuilder("cout");
+
+            for (String parte : partes) {
+                parte = parte.trim();
+                if (!parte.isEmpty()) {
+                    resultado.append(" << ").append(parte);
+                }
+            }
+
+            resultado.append(" << endl");
+            return resultado.toString();
+        }
+
+        return "cout << " + argumentos + " << endl";
+    }
+
+    /**
+     * Detectar si un String es un identificador
+     */
+    private boolean esIdentificador(String texto) {
+        return texto != null && texto.matches("[a-zA-Z_][a-zA-Z0-9_]*");
+    }
+
+    /**
+     * Procesar declaraciones de variables con inicialización
+     * int a,b; → int a = 0, b = 0; (si no tienen inicialización explícita)
+     */
+    private String procesarDeclaracionVariable(String tipo, String declaradores) {
+        // Si el declarador ya tiene inicialización, retornar tal cual
+        if (declaradores.contains("=")) {
+            return tipo + " " + declaradores;
+        }
+
+        // Si es una declaración múltiple (con comas)
+        if (declaradores.contains(",")) {
+            String[] vars = declaradores.split(",");
+            StringBuilder resultado = new StringBuilder();
+
+            for (int i = 0; i < vars.length; i++) {
+                if (i > 0)
+                    resultado.append(", ");
+                String var = vars[i].trim();
+                resultado.append(var).append(" = ");
+                resultado.append(obtenerValorInicialPorTipo(tipo));
+            }
+
+            return tipo + " " + resultado.toString();
+        }
+
+        // Declaración simple sin inicialización
+        return tipo + " " + declaradores + " = " + obtenerValorInicialPorTipo(tipo);
+    }
+
+    /**
+     * Obtener valor inicial según el tipo
+     */
+    private String obtenerValorInicialPorTipo(String tipo) {
+        switch (tipo) {
+            case "int":
+            case "short":
+            case "long":
+            case "byte":
+                return "0";
+            case "float":
+            case "double":
+                return "0.0";
+            case "bool":
+                return "false";
+            case "char":
+                return "'\\0'";
+            default:
+                return "nullptr";
+        }
+    }
+
+    /**
+     * Limpiar código generado - VERSIÓN MEJORADA
+     * Remueve duplicados y formatea correctamente
+     */
+    private String limpiarCodigoGenerado(String codigo) {
+        if (codigo == null || codigo.isEmpty()) {
+            return "";
+        }
+
+        String[] lineas = codigo.split("\n");
+        Set<String> includesVistos = new HashSet<>();
+        StringBuilder resultado = new StringBuilder();
+        boolean usingVisto = false;
+        int indentLevel = 0;
+
+        for (String linea : lineas) {
+            String lineaTrim = linea.trim();
+
+            // Remover includes duplicados
+            if (lineaTrim.startsWith("#include")) {
+                if (!includesVistos.contains(lineaTrim)) {
+                    includesVistos.add(lineaTrim);
+                    resultado.append(linea).append("\n");
+                }
+                continue;
+            }
+
+            // Remover using namespace std duplicado
+            if (lineaTrim.equals("using namespace std;")) {
+                if (!usingVisto) {
+                    usingVisto = true;
+                    resultado.append(linea).append("\n");
+                }
+                continue;
+            }
+
+            // Ajustar indentación
+            if (lineaTrim.startsWith("}")) {
+                indentLevel = Math.max(0, indentLevel - 1);
+            }
+
+            // Agregar línea con indentación apropiada
+            if (!lineaTrim.isEmpty()) {
+                // No indentar comentarios de paquete/import ni modificadores de acceso
+                if (lineaTrim.startsWith("//") ||
+                        lineaTrim.equals("public:") ||
+                        lineaTrim.equals("private:") ||
+                        lineaTrim.equals("protected:")) {
+                    resultado.append(linea).append("\n");
+                } else {
+                    String indent = "    ".repeat(indentLevel);
+                    resultado.append(indent).append(lineaTrim).append("\n");
+                }
+            }
+
+            if (lineaTrim.endsWith("{") && !lineaTrim.startsWith("//")) {
+                indentLevel++;
+            }
+        }
+
+        return resultado.toString().trim();
+    }
+
+    /***
+     * 
+     * Formatear código C++generado-
+     * VERSIÓN FINAL*
+     * Aplica formato
+     * profesional al código
+     */
+
+    private String formatearCodigoCpp(String codigo) {
+        StringBuilder resultado = new StringBuilder();
+        String[] lineas = codigo.split("\n");
+        int indentLevel = 0;
+        boolean dentroDeClase = false;
+
+        for (int i = 0; i < lineas.length; i++) {
+            String linea = lineas[i].trim();
+
+            if (linea.isEmpty()) {
+                resultado.append("\n");
+                continue;
+            }
+
+            // Ajustar indentación antes de la línea
+            if (linea.startsWith("}")) {
+                indentLevel = Math.max(0, indentLevel - 1);
+                if (linea.equals("};")) {
+                    dentroDeClase = false;
+                }
+            }
+
+            // Casos especiales sin indentación
+            if (linea.startsWith("#include") ||
+                    linea.startsWith("using namespace") ||
+                    linea.startsWith("//") && !dentroDeClase) {
+                resultado.append(linea).append("\n");
+                continue;
+            }
+
+            // Modificadores de acceso (public:, private:, protected:)
+            if (linea.equals("public:") || linea.equals("private:") || linea.equals("protected:")) {
+                // Volver un nivel atrás para modificadores
+                String indent = "    ".repeat(Math.max(0, indentLevel - 1));
+                resultado.append(indent).append(linea).append("\n");
+                continue;
+            }
+
+            // Línea normal con indentación
+            String indent = "    ".repeat(indentLevel);
+            resultado.append(indent).append(linea).append("\n");
+
+            // Ajustar indentación después de la línea
+            if (linea.endsWith("{")) {
+                indentLevel++;
+                if (linea.startsWith("class ")) {
+                    dentroDeClase = true;
+                }
+            }
+        }
+
+        return resultado.toString();
+    }
+
+    /**
+     * Convertir condiciones en sentencias (while, if, do-while)
+     * Solo agrega != 0 a variables solas en condiciones
+     */
+    private String convertirCondicionesEnSentencia(String sentencia) {
+        // Buscar patrones: while (expr) o if (expr)
+
+        // Patrón para while
+        sentencia = procesarCondicion(sentencia, "while");
+
+        // Patrón para if
+        sentencia = procesarCondicion(sentencia, "if");
+
+        // Patrón para do-while
+        if (sentencia.contains("while (")) {
+            sentencia = procesarCondicion(sentencia, "while");
+        }
+
+        return sentencia;
+    }
+
+    /**
+     * Procesar una condición específica (while o if)
+     */
+    private String procesarCondicion(String texto, String palabra) {
+        String patron = palabra + " (";
+        int inicio = texto.indexOf(patron);
+
+        if (inicio == -1) {
+            return texto;
+        }
+
+        inicio += patron.length();
+
+        // Encontrar el paréntesis de cierre
+        int nivel = 1;
+        int fin = -1;
+        for (int i = inicio; i < texto.length(); i++) {
+            char c = texto.charAt(i);
+            if (c == '(')
+                nivel++;
+            else if (c == ')') {
+                nivel--;
+                if (nivel == 0) {
+                    fin = i;
+                    break;
+                }
+            }
+        }
+
+        if (fin == -1) {
+            return texto;
+        }
+
+        // Extraer la condición
+        String condicion = texto.substring(inicio, fin);
+
+        // Convertir la condición
+        String condicionConvertida = convertirCondicionBooleanaReal(condicion);
+
+        // Reconstruir
+        String antes = texto.substring(0, inicio);
+        String despues = texto.substring(fin);
+
+        return antes + condicionConvertida + despues;
+    }
+
+    /**
+     * Convertir condición booleana MEJORADA
+     * Agrega != 0 solo a identificadores solos
+     */
+    private String convertirCondicionBooleanaReal(String condicion) {
+        condicion = condicion.trim();
+
+        // Si ya tiene operador de comparación, retornar
+        if (condicion.matches(".*[<>=!]=.*") || condicion.matches(".*[<>].*")) {
+            // Pero revisar sub-expresiones con && y ||
+            return procesarSubCondiciones(condicion);
+        }
+
+        // Si es un identificador solo, agregar != 0
+        if (condicion.matches("\\w+")) {
+            // No agregar a true/false
+            if (condicion.equals("true") || condicion.equals("false")) {
+                return condicion;
+            }
+            return condicion + " != 0";
+        }
+
+        return condicion;
+    }
+
+    /**
+     * Procesar sub-condiciones con && y ||
+     */
+    private String procesarSubCondiciones(String condicion) {
+        // Dividir por || (menor precedencia)
+        if (condicion.contains("||")) {
+            String[] partes = splitPorOperadorLogico(condicion, "||");
+            StringBuilder resultado = new StringBuilder();
+            for (int i = 0; i < partes.length; i++) {
+                if (i > 0)
+                    resultado.append(" || ");
+                resultado.append(convertirCondicionBooleanaReal(partes[i].trim()));
+            }
+            return resultado.toString();
+        }
+
+        // Dividir por &&
+        if (condicion.contains("&&")) {
+            String[] partes = splitPorOperadorLogico(condicion, "&&");
+            StringBuilder resultado = new StringBuilder();
+            for (int i = 0; i < partes.length; i++) {
+                if (i > 0)
+                    resultado.append(" && ");
+                resultado.append(convertirCondicionBooleanaReal(partes[i].trim()));
+            }
+            return resultado.toString();
+        }
+
+        return condicion;
+    }
+
+    /**
+     * Dividir por operador lógico respetando paréntesis
+     */
+    private String[] splitPorOperadorLogico(String texto, String operador) {
+        List<String> partes = new ArrayList<>();
+        StringBuilder actual = new StringBuilder();
+        int nivel = 0;
+
+        for (int i = 0; i < texto.length(); i++) {
+            char c = texto.charAt(i);
+
+            if (c == '(') {
+                nivel++;
+                actual.append(c);
+            } else if (c == ')') {
+                nivel--;
+                actual.append(c);
+            } else if (nivel == 0 && i + operador.length() <= texto.length()) {
+                String sub = texto.substring(i, i + operador.length());
+                if (sub.equals(operador)) {
+                    partes.add(actual.toString());
+                    actual = new StringBuilder();
+                    i += operador.length() - 1;
+                    continue;
+                } else {
+                    actual.append(c);
+                }
+            } else {
+                actual.append(c);
+            }
+        }
+
+        if (actual.length() > 0) {
+            partes.add(actual.toString());
+        }
+
+        return partes.toArray(new String[0]);
+    }
+
+    /**
+     * Convertir incremento/decremento SOLO en contexto de actualización
+     * i + 1 → i++
+     * i - 1 → i--
+     */
+    private String convertirIncrementoDecrementoContextual(String expresion) {
+        expresion = expresion.trim();
+
+        // Patrón: identificador + 1
+        if (expresion.matches("\\s*\\w+\\s*\\+\\s*1\\s*")) {
+            String variable = expresion.replaceAll("\\s*\\+\\s*1\\s*", "").trim();
+            return variable + "++";
+        }
+
+        // Patrón: identificador - 1
+        if (expresion.matches("\\s*\\w+\\s*-\\s*1\\s*")) {
+            String variable = expresion.replaceAll("\\s*-\\s*1\\s*", "").trim();
+            return variable + "--";
+        }
+
+        return expresion;
+    }
+
+    /**
+     * Convertir asignaciones con incremento
+     * i = i + 1 → i++
+     * i = i - 1 → i--
+     */
+    private String convertirAsignacionIncremento(String expresion) {
+        expresion = expresion.trim();
+
+        // Patrón: var = var + 1
+        if (expresion.matches("(\\w+)\\s*=\\s*\\1\\s*\\+\\s*1")) {
+            String variable = expresion.split("=")[0].trim();
+            return variable + "++";
+        }
+
+        // Patrón: var = var - 1
+        if (expresion.matches("(\\w+)\\s*=\\s*\\1\\s*-\\s*1")) {
+            String variable = expresion.split("=")[0].trim();
+            return variable + "--";
+        }
+
+        return expresion;
     }
 
     // ==================== FIN DEL CÓDIGO FALTANTE ====================

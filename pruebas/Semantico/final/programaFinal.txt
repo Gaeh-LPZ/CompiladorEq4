@@ -1,0 +1,27 @@
+Package ejemplo;
+
+import java.util.List;
+import java.io.*;
+
+public class HolaMundo extends BaseClass implements Runnable {
+
+    private int contador = 0 + 5;
+
+    public HolaMundo() {
+        contador = 10;
+    }
+
+    public void imprimirMensaje(String mensaje) {
+        System.out.println(mensaje);
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Hola Mundo");
+    }
+
+    public void run() {
+        for (int i = 0; i < contador; i+1) {
+            System.out.println("Ejecución " + i);
+        }
+    }
+}

@@ -51,6 +51,8 @@ SentenciasBloque -> SentenciaBloque SentenciasBloque | SentenciaBloque
 SentenciaBloque -> SentenciaDeclaracionVarLocal | Sentencia
 SentenciaDeclaracionVarLocal -> Modificadores Tipo DeclaradoresDeVariable PUNTO_Y_COMA
 Sentencia -> Bloque | IF PARENTESIS_IZQ Expresion PARENTESIS_DER Sentencia ELSE Sentencia | IF PARENTESIS_IZQ Expresion PARENTESIS_DER Sentencia | SWITCH PARENTESIS_IZQ Expresion PARENTESIS_DER Bloque | WHILE PARENTESIS_IZQ Expresion PARENTESIS_DER Sentencia | DO Sentencia WHILE PARENTESIS_IZQ Expresion PARENTESIS_DER PUNTO_Y_COMA | FOR PARENTESIS_IZQ InicializacionParaOpt PUNTO_Y_COMA CondicionParaOpt PUNTO_Y_COMA ActualizacionParaOpt PARENTESIS_DER Sentencia | BREAK IDENTIFICADOR_OPC PUNTO_Y_COMA | CONTINUE IDENTIFICADOR_OPC PUNTO_Y_COMA | RETURN ExpresionOpt PUNTO_Y_COMA | THROW Expresion PUNTO_Y_COMA | TRY Bloque ClausulasCapturaOpt FinalmenteOpt | SentenciaDeExpresion | PUNTO_Y_COMA
+Sentencia -> CASE Expresion DOS_PUNTOS
+Sentencia -> DEFAULT DOS_PUNTOS
 IDENTIFICADOR_OPC -> IDENTIFICADOR | ε
 ExpresionOpt -> Expresion | ε
 ClausulasCapturaOpt -> ClausulasCaptura | ε

@@ -228,6 +228,7 @@ public class analizadorSemanticoFinalPanel extends JPanel {
                 @Override
                 protected ResultadoAnalisisCompleto doInBackground() throws Exception {
                     AnalizadorSemanticoLRFinal analizador = new AnalizadorSemanticoLRFinal();
+                    // ✅ El analizador SIEMPRE retorna un resultado (nunca null)
                     return analizador.analizar(txtCodigo.getText());
                 }
 
@@ -236,25 +237,54 @@ public class analizadorSemanticoFinalPanel extends JPanel {
                     dialogProgreso.dispose();
                     try {
                         resultadoActual = get();
-                        mostrarResultados(resultadoActual);
 
-                        if (resultadoActual.tieneErrores()) {
-                            JOptionPane.showMessageDialog(
-                                    analizadorSemanticoFinalPanel.this,
-                                    "Análisis completado con " + resultadoActual.getErrores().size() + " error(es)",
-                                    "Advertencia",
-                                    JOptionPane.WARNING_MESSAGE);
+                        // ✅ SIEMPRE mostrar resultados (parciales o completos)
+                        if (resultadoActual != null) {
+                            mostrarResultados(resultadoActual);
+
+                            // Mensaje según resultado
+                            if (resultadoActual.tieneErrores()) {
+                                String mensaje = "⚠️ Análisis completado con " + resultadoActual.getErrores().size()
+                                        + " error(es)\n\n";
+                                mensaje += "Se muestran los resultados parciales hasta donde se pudo analizar.\n\n";
+                                mensaje += "Errores:\n";
+                                int maxErrores = Math.min(5, resultadoActual.getErrores().size());
+                                for (int i = 0; i < maxErrores; i++) {
+                                    mensaje += "  • " + resultadoActual.getErrores().get(i) + "\n";
+                                }
+                                if (resultadoActual.getErrores().size() > 5) {
+                                    mensaje += "  ... y " + (resultadoActual.getErrores().size() - 5) + " más.";
+                                }
+
+                                JOptionPane.showMessageDialog(
+                                        analizadorSemanticoFinalPanel.this,
+                                        mensaje,
+                                        "Análisis con Errores",
+                                        JOptionPane.WARNING_MESSAGE);
+                            } else {
+                                JOptionPane.showMessageDialog(
+                                        analizadorSemanticoFinalPanel.this,
+                                        "✅ Análisis completado exitosamente sin errores\n\n" +
+                                                "Se abrieron las ventanas con los resultados.",
+                                        "Éxito",
+                                        JOptionPane.INFORMATION_MESSAGE);
+                            }
                         } else {
-                            JOptionPane.showMessageDialog(
-                                    analizadorSemanticoFinalPanel.this,
-                                    "✅ Análisis completado exitosamente",
-                                    "Éxito",
-                                    JOptionPane.INFORMATION_MESSAGE);
+                            // Esto no debería pasar ahora
+                            mostrarError("No se pudo obtener ningún resultado del análisis");
                         }
 
                     } catch (Exception ex) {
-                        mostrarError("Error en el análisis:\n" + ex.getMessage());
+                        // ✅ Esto solo ocurriría si hay un error MUY grave
+                        System.err.println("⚠️ Excepción al obtener resultado: " + ex.getMessage());
                         ex.printStackTrace();
+
+                        String mensaje = "Error al procesar el análisis:\n" + ex.getMessage();
+                        if (resultadoActual != null) {
+                            mensaje += "\n\nSe intentará mostrar resultados parciales disponibles.";
+                            mostrarResultados(resultadoActual);
+                        }
+                        mostrarError(mensaje);
                     }
                 }
             };
@@ -294,96 +324,105 @@ public class analizadorSemanticoFinalPanel extends JPanel {
     }
 
     private void mostrarResultados(ResultadoAnalisisCompleto resultado) {
+        if (resultado == null) {
+            mostrarError("No hay resultados para mostrar");
+            return;
+        }
+
         // Guardar resultado actual
         this.resultadoActual = resultado;
 
-        // 1. VENTANA: Código Fuente
-        VentanaCodigoFuente ventanaCodigo = new VentanaCodigoFuente(codigoFuenteCargado);
-        ventanaCodigo.setLocationRelativeTo(SwingUtilities.getWindowAncestor(this));
-        ventanaCodigo.setVisible(true);
-
-        // ✅ 2. VENTANA: Tabla de Análisis Sintáctico LR (AGREGAR DEBUG)
-        System.out.println("🔍 DEBUG: resultado.getTablaLR() = " + resultado.getTablaLR());
-        if (resultado.getTablaLR() != null) {
-            System.out.println("✅ Creando ventana de tabla LR...");
-            VentanaTablaLR ventanaTablaLR = new VentanaTablaLR(resultado.getTablaLR());
-            ventanaTablaLR.setLocation(ventanaCodigo.getX() + 50, ventanaCodigo.getY() + 50);
-            ventanaTablaLR.setVisible(true);
-            System.out.println("✅ Ventana de tabla LR mostrada");
-        } else {
-            System.out.println("❌ ERROR: resultado.getTablaLR() es NULL");
-        }
-
-        // 3. VENTANA: Tira de Tokens (ahora en formato tabla)
-        Object[][] datosTokens = convertirTokensATabla(resultado.getTokensString());
-        VentanaTiraTokens ventanaTokens = new VentanaTiraTokens(datosTokens);
-        ventanaTokens.setLocation(ventanaCodigo.getX() + 100, ventanaCodigo.getY() + 100);
-        ventanaTokens.setVisible(true);
-
-        // ✅ AGREGAR ESTA SECCIÓN (VENTANA DE SÍMBOLOS)
-        // 4. VENTANA: Tabla de Símbolos
-        Object[][] datosSimbolos = new Object[resultado.getTablaSimbolos().size()][];
-        int idx = 0;
-        for (var s : resultado.getTablaSimbolos().getSimbolos()) {
-            datosSimbolos[idx++] = s.toArray();
-        }
-        VentanaTablaSimbolos ventanaSimbolos = new VentanaTablaSimbolos(datosSimbolos);
-        ventanaSimbolos.setLocation(ventanaTokens.getX() + 50, ventanaTokens.getY() + 50);
-        ventanaSimbolos.setVisible(true);
-
-        // 5. VENTANA: Tabla de Errores
-        Object[][] datosErrores;
-        if (resultado.getErrores().isEmpty()) {
-            datosErrores = new Object[][] { { "-", "✅ No se encontraron errores" } };
-        } else {
-            datosErrores = new Object[resultado.getErrores().size()][];
-            for (int i = 0; i < resultado.getErrores().size(); i++) {
-                datosErrores[i] = new Object[] { i + 1, resultado.getErrores().get(i) };
+        try {
+            // 1. VENTANA: Código Fuente (siempre disponible)
+            if (!codigoFuenteCargado.isEmpty()) {
+                VentanaCodigoFuente ventanaCodigo = new VentanaCodigoFuente(codigoFuenteCargado);
+                ventanaCodigo.setLocationRelativeTo(SwingUtilities.getWindowAncestor(this));
+                ventanaCodigo.setVisible(true);
             }
-        }
-        VentanaTablaErrores ventanaErrores = new VentanaTablaErrores(datosErrores);
-        ventanaErrores.setLocation(ventanaSimbolos.getX() + 50, ventanaSimbolos.getY() + 50);
-        ventanaErrores.setVisible(true);
 
-        // 6. VENTANA: Análisis Semántico LR (Corrida)
-        Object[][] datosCorrida = new Object[resultado.getCorrida().size()][];
-        for (int i = 0; i < resultado.getCorrida().size(); i++) {
-            PasoAnalisis paso = resultado.getCorrida().get(i);
-            datosCorrida[i] = paso.toArray();
-        }
-        VentanaCorridaSemantico ventanaCorrida = new VentanaCorridaSemantico(datosCorrida);
-        ventanaCorrida.setLocation(ventanaErrores.getX() + 50, ventanaErrores.getY() + 50);
-        ventanaCorrida.setVisible(true);
+            // 2. VENTANA: Tabla de Análisis Sintáctico LR
+            if (resultado.getTablaLR() != null) {
+                System.out.println("✅ Mostrando tabla LR...");
+                VentanaTablaLR ventanaTablaLR = new VentanaTablaLR(resultado.getTablaLR());
+                ventanaTablaLR.setLocation(100, 100);
+                ventanaTablaLR.setVisible(true);
+            } else {
+                System.out.println("⚠️ Tabla LR no disponible");
+            }
 
-        // 7. VENTANA: Código C++ Generado
-        if (!resultado.getCodigoObjeto().isEmpty()) {
-            VentanaCodigoCpp ventanaCpp = new VentanaCodigoCpp(resultado.getCodigoObjeto());
-            ventanaCpp.setLocation(ventanaCorrida.getX() + 50, ventanaCorrida.getY() + 50);
-            ventanaCpp.setVisible(true);
-            btnGuardarCpp.setEnabled(true);
-        }
+            // 3. VENTANA: Tira de Tokens
+            if (resultado.getTokensString() != null && !resultado.getTokensString().isEmpty()) {
+                Object[][] datosTokens = convertirTokensATabla(resultado.getTokensString());
+                VentanaTiraTokens ventanaTokens = new VentanaTiraTokens(datosTokens);
+                ventanaTokens.setLocation(150, 150);
+                ventanaTokens.setVisible(true);
+            } else {
+                System.out.println("⚠️ Tokens no disponibles");
+            }
 
-        // 8. VENTANA: Checklist
-        String checklist = generarChecklistTexto(resultado);
-        VentanaChecklist ventanaChecklist = new VentanaChecklist(checklist);
-        ventanaChecklist.setLocation(ventanaCorrida.getX() + 50, ventanaCorrida.getY() + 50);
-        ventanaChecklist.setVisible(true);
+            // 4. VENTANA: Tabla de Símbolos
+            if (resultado.getTablaSimbolos() != null && resultado.getTablaSimbolos().size() > 0) {
+                Object[][] datosSimbolos = new Object[resultado.getTablaSimbolos().size()][];
+                int idx = 0;
+                for (var s : resultado.getTablaSimbolos().getSimbolos()) {
+                    datosSimbolos[idx++] = s.toArray();
+                }
+                VentanaTablaSimbolos ventanaSimbolos = new VentanaTablaSimbolos(datosSimbolos);
+                ventanaSimbolos.setLocation(200, 200);
+                ventanaSimbolos.setVisible(true);
+            } else {
+                System.out.println("⚠️ Tabla de símbolos vacía");
+            }
 
-        // Mostrar mensaje de éxito
-        if (resultado.tieneErrores()) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Análisis completado con " + resultado.getErrores().size() + " error(es)\n\n" +
-                            "Se abrieron 8 ventanas con los resultados.",
-                    "Advertencia",
-                    JOptionPane.WARNING_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "✅ Análisis completado exitosamente\n\n" +
-                            "Se abrieron 8 ventanas con los resultados.",
-                    "Éxito",
-                    JOptionPane.INFORMATION_MESSAGE);
+            // 5. VENTANA: Tabla de Errores (SIEMPRE mostrar)
+            Object[][] datosErrores;
+            if (resultado.getErrores() == null || resultado.getErrores().isEmpty()) {
+                datosErrores = new Object[][] { { "-", "✅ No se encontraron errores" } };
+            } else {
+                datosErrores = new Object[resultado.getErrores().size()][];
+                for (int i = 0; i < resultado.getErrores().size(); i++) {
+                    datosErrores[i] = new Object[] { i + 1, resultado.getErrores().get(i) };
+                }
+            }
+            VentanaTablaErrores ventanaErrores = new VentanaTablaErrores(datosErrores);
+            ventanaErrores.setLocation(250, 250);
+            ventanaErrores.setVisible(true);
+
+            // 6. VENTANA: Análisis Semántico LR (Corrida) - MOSTRAR PARCIAL
+            if (resultado.getCorrida() != null && !resultado.getCorrida().isEmpty()) {
+                Object[][] datosCorrida = new Object[resultado.getCorrida().size()][];
+                for (int i = 0; i < resultado.getCorrida().size(); i++) {
+                    PasoAnalisis paso = resultado.getCorrida().get(i);
+                    datosCorrida[i] = paso.toArray();
+                }
+                VentanaCorridaSemantico ventanaCorrida = new VentanaCorridaSemantico(datosCorrida);
+                ventanaCorrida.setLocation(300, 300);
+                ventanaCorrida.setVisible(true);
+            } else {
+                System.out.println("⚠️ Corrida del análisis no disponible");
+            }
+
+            // 7. VENTANA: Código C++ Generado (si existe)
+            if (resultado.getCodigoObjeto() != null && !resultado.getCodigoObjeto().isEmpty()) {
+                VentanaCodigoCpp ventanaCpp = new VentanaCodigoCpp(resultado.getCodigoObjeto());
+                ventanaCpp.setLocation(350, 350);
+                ventanaCpp.setVisible(true);
+                btnGuardarCpp.setEnabled(true);
+            } else {
+                System.out.println("⚠️ Código C++ no generado (análisis incompleto)");
+                btnGuardarCpp.setEnabled(false);
+            }
+
+            // 8. VENTANA: Checklist
+            String checklist = generarChecklistTexto(resultado);
+            VentanaChecklist ventanaChecklist = new VentanaChecklist(checklist);
+            ventanaChecklist.setLocation(400, 400);
+            ventanaChecklist.setVisible(true);
+
+        } catch (Exception ex) {
+            System.err.println("⚠️ Error al mostrar ventanas: " + ex.getMessage());
+            ex.printStackTrace();
+            // No detener el proceso, algunas ventanas ya se mostraron
         }
     }
 
@@ -464,24 +503,38 @@ public class analizadorSemanticoFinalPanel extends JPanel {
         sb.append("  CHECKLIST DE SALIDAS - ANALIZADOR SEMÁNTICO LR\n");
         sb.append("═══════════════════════════════════════════════════════\n\n");
 
-        sb.append("✅ 1. Programa fuente cargado\n");
-        sb.append("✅ 2. Tira de tokens generada (").append(resultado.getTokensString().size()).append(" tokens)\n");
-        sb.append("✅ 3. Tabla de símbolos construida (").append(resultado.getTablaSimbolos().size())
+        // Verificar cada componente
+        sb.append(codigoFuenteCargado.isEmpty() ? "❌" : "✅")
+                .append(" 1. Programa fuente cargado\n");
+
+        sb.append(resultado.getTokensString() == null || resultado.getTokensString().isEmpty() ? "❌" : "✅")
+                .append(" 2. Tira de tokens generada (")
+                .append(resultado.getTokensString() != null ? resultado.getTokensString().size() : 0)
+                .append(" tokens)\n");
+
+        sb.append(resultado.getTablaSimbolos() == null || resultado.getTablaSimbolos().size() == 0 ? "❌" : "✅")
+                .append(" 3. Tabla de símbolos construida (")
+                .append(resultado.getTablaSimbolos() != null ? resultado.getTablaSimbolos().size() : 0)
                 .append(" símbolos)\n");
 
-        if (resultado.getErrores().isEmpty()) {
+        if (resultado.getErrores() == null || resultado.getErrores().isEmpty()) {
             sb.append("✅ 4. Tabla de errores (sin errores)\n");
         } else {
             sb.append("⚠️  4. Tabla de errores (").append(resultado.getErrores().size()).append(" error(es))\n");
         }
 
-        sb.append("✅ 5. Tabla de análisis sintáctico LR(0) generada\n");
-        sb.append("✅ 6. Análisis semántico LR ejecutado (").append(resultado.getCorrida().size()).append(" pasos)\n");
+        sb.append(resultado.getTablaLR() == null ? "❌" : "✅")
+                .append(" 5. Tabla de análisis sintáctico LR(0) generada\n");
 
-        if (!resultado.getCodigoObjeto().isEmpty()) {
+        sb.append(resultado.getCorrida() == null || resultado.getCorrida().isEmpty() ? "⚠️ " : "✅")
+                .append(" 6. Análisis semántico LR ejecutado (")
+                .append(resultado.getCorrida() != null ? resultado.getCorrida().size() : 0)
+                .append(" pasos)\n");
+
+        if (resultado.getCodigoObjeto() != null && !resultado.getCodigoObjeto().isEmpty()) {
             sb.append("✅ 7. Programa objeto C++ generado\n");
         } else {
-            sb.append("⚠️  7. Programa objeto C++ (vacío - verificar acciones semánticas)\n");
+            sb.append("⚠️  7. Programa objeto C++ (no generado - análisis incompleto)\n");
         }
 
         sb.append("\n═══════════════════════════════════════════════════════\n");
@@ -494,6 +547,7 @@ public class analizadorSemanticoFinalPanel extends JPanel {
             for (String error : resultado.getErrores()) {
                 sb.append("  • ").append(error).append("\n");
             }
+            sb.append("\n⚠️  Se muestran resultados parciales hasta donde se detectó el error.\n");
         } else {
             sb.append("✅ Análisis completado EXITOSAMENTE sin errores\n");
         }
