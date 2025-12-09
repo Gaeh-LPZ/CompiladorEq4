@@ -19,6 +19,7 @@ public class AnalizadorFlexCupPanel extends JPanel {
     private static final Color ACCENT_COLOR = new Color(0x3574F0);
     private static final Color SUCCESS_COLOR = new Color(0x499C54);
     private static final Color ERROR_COLOR = new Color(0xC55252);
+    private static final Color BORDER_DARK = new Color(0x2A2D31);
 
     // Directorio por defecto para archivos
     private static final String DIRECTORIO_ARCHIVOS = "pruebas/final_flex";
@@ -378,7 +379,8 @@ public class AnalizadorFlexCupPanel extends JPanel {
         worker.execute();
     }
 
-    // ==================== MÉTODOS PARA MOSTRAR VENTANAS ====================
+    // ==================== MÉTODOS PARA MOSTRAR VENTANAS MEJORADAS
+    // ====================
 
     private void mostrarVentanaTokens() {
         if (ventanaTokens != null) {
@@ -387,7 +389,7 @@ public class AnalizadorFlexCupPanel extends JPanel {
 
         ventanaTokens = crearVentanaResultado(
                 "🎯 Tira de Tokens",
-                800,
+                900,
                 600,
                 controlador.getResultadosAnalisis().getTokens(),
                 new Color(0x9B59B6));
@@ -402,8 +404,8 @@ public class AnalizadorFlexCupPanel extends JPanel {
         if (contenido != null && !contenido.trim().isEmpty()) {
             ventanaSimbolos = crearVentanaTabla(
                     "📚 Tabla de Símbolos",
-                    600,
-                    400,
+                    800,
+                    500,
                     contenido,
                     new Color(0x3498DB));
         } else {
@@ -421,8 +423,8 @@ public class AnalizadorFlexCupPanel extends JPanel {
 
         ventanaTraduccion = crearVentanaResultado(
                 "🔄 Traducción (Código Objeto)",
-                800,
-                500,
+                900,
+                600,
                 controlador.getResultadosAnalisis().getTraduccion(),
                 new Color(0x2ECC71));
     }
@@ -436,8 +438,8 @@ public class AnalizadorFlexCupPanel extends JPanel {
         if (contenido != null && !contenido.trim().isEmpty()) {
             ventanaErrores = crearVentanaTabla(
                     "❌ Tabla de Errores",
-                    700,
-                    300,
+                    800,
+                    400,
                     contenido,
                     ERROR_COLOR);
         } else {
@@ -448,66 +450,70 @@ public class AnalizadorFlexCupPanel extends JPanel {
         }
     }
 
-    // ==================== MÉTODOS PARA CREAR VENTANAS ====================
+    // ==================== MÉTODOS PARA CREAR VENTANAS ELEGANTES
+    // ====================
 
-    private JFrame crearVentanaResultado(String titulo, int ancho, int alto, String contenido, Color colorTitulo) {
+    private JFrame crearVentanaResultado(String titulo, int ancho, int alto, String contenido, Color colorAccent) {
         JFrame ventana = new JFrame(titulo);
         ventana.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         ventana.setSize(ancho, alto);
         ventana.setLocationRelativeTo(this);
 
-        // Crear panel principal
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(BG_DARK);
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        // Panel principal con diseño moderno
+        JPanel panelPrincipal = new JPanel(new BorderLayout(0, 0));
+        panelPrincipal.setBackground(BG_DARK);
 
-        // Crear área de texto
+        // Barra superior con título y botones
+        JPanel barraTitulo = crearBarraTitulo(titulo, colorAccent, ventana);
+        panelPrincipal.add(barraTitulo, BorderLayout.NORTH);
+
+        // Área de contenido
         JTextArea areaTexto = crearTextArea();
         areaTexto.setText(contenido != null ? contenido : "No hay datos disponibles");
         areaTexto.setCaretPosition(0);
+        areaTexto.setBorder(new EmptyBorder(15, 15, 15, 15));
 
-        // Crear barra de herramientas
-        JPanel barraHerramientas = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        barraHerramientas.setBackground(colorTitulo);
+        JScrollPane scrollPane = new JScrollPane(areaTexto);
+        scrollPane.setBackground(BG_DARKER);
+        scrollPane.getViewport().setBackground(BG_DARKER);
+        scrollPane.setBorder(BorderFactory.createLineBorder(BORDER_DARK));
 
-        JButton btnCopiar = new JButton("📋 Copiar");
-        btnCopiar.setBackground(BG_DARKER);
-        btnCopiar.setForeground(FG_LIGHT);
-        btnCopiar.setFocusPainted(false);
-        btnCopiar.setBorderPainted(false);
-        btnCopiar.addActionListener(e -> {
-            areaTexto.selectAll();
-            areaTexto.copy();
-            JOptionPane.showMessageDialog(ventana, "Contenido copiado al portapapeles");
-        });
+        panelPrincipal.add(scrollPane, BorderLayout.CENTER);
 
-        barraHerramientas.add(btnCopiar);
+        // Barra inferior con estadísticas
+        JPanel barraInferior = crearBarraInferior(contenido);
+        panelPrincipal.add(barraInferior, BorderLayout.SOUTH);
 
-        panel.add(barraHerramientas, BorderLayout.NORTH);
-        panel.add(new JScrollPane(areaTexto), BorderLayout.CENTER);
-
-        ventana.add(panel);
+        ventana.add(panelPrincipal);
         ventana.setVisible(true);
         return ventana;
     }
 
-    private JFrame crearVentanaTabla(String titulo, int ancho, int alto, String contenido, Color colorTitulo) {
+    private JFrame crearVentanaTabla(String titulo, int ancho, int alto, String contenido, Color colorAccent) {
         JFrame ventana = new JFrame(titulo);
         ventana.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         ventana.setSize(ancho, alto);
         ventana.setLocationRelativeTo(this);
 
-        // Crear panel principal
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(BG_DARK);
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        // Panel principal con diseño moderno
+        JPanel panelPrincipal = new JPanel(new BorderLayout(0, 0));
+        panelPrincipal.setBackground(BG_DARK);
 
-        // Crear tabla
+        // Barra superior con título y botones
+        JPanel barraTitulo = crearBarraTitulo(titulo, colorAccent, ventana);
+        panelPrincipal.add(barraTitulo, BorderLayout.NORTH);
+
+        // Crear tabla desde contenido
         String[] lineas = contenido.split("\n");
         if (lineas.length > 0) {
             // Obtener encabezados de la primera línea
             String[] encabezados = lineas[0].split("\t");
-            DefaultTableModel modelo = new DefaultTableModel(encabezados, 0);
+            DefaultTableModel modelo = new DefaultTableModel(encabezados, 0) {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false;
+                }
+            };
 
             // Agregar datos
             for (int i = 1; i < lineas.length; i++) {
@@ -517,62 +523,157 @@ public class AnalizadorFlexCupPanel extends JPanel {
                 }
             }
 
-            JTable tabla = crearTabla(modelo);
+            JTable tabla = crearTablaEstilizada(modelo);
             JScrollPane scrollPane = new JScrollPane(tabla);
+            scrollPane.setBackground(BG_DARKER);
             scrollPane.getViewport().setBackground(BG_DARKER);
+            scrollPane.setBorder(BorderFactory.createLineBorder(BORDER_DARK));
 
-            // Crear barra de herramientas
-            JPanel barraHerramientas = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-            barraHerramientas.setBackground(colorTitulo);
+            panelPrincipal.add(scrollPane, BorderLayout.CENTER);
 
-            JButton btnExportar = new JButton("💾 Exportar CSV");
-            btnExportar.setBackground(BG_DARKER);
-            btnExportar.setForeground(FG_LIGHT);
-            btnExportar.setFocusPainted(false);
-            btnExportar.setBorderPainted(false);
-            btnExportar.addActionListener(e -> exportarTablaCSV(tabla, titulo));
-
-            barraHerramientas.add(btnExportar);
-
-            panel.add(barraHerramientas, BorderLayout.NORTH);
-            panel.add(scrollPane, BorderLayout.CENTER);
+            // Barra inferior con estadísticas
+            JPanel barraInferior = crearBarraInferiorTabla(modelo);
+            panelPrincipal.add(barraInferior, BorderLayout.SOUTH);
         }
 
-        ventana.add(panel);
+        ventana.add(panelPrincipal);
         ventana.setVisible(true);
         return ventana;
     }
 
-    private void exportarTablaCSV(JTable tabla, String nombreArchivo) {
+    private JPanel crearBarraTitulo(String titulo, Color colorAccent, JFrame ventana) {
+        JPanel barra = new JPanel(new BorderLayout(10, 0));
+        barra.setBackground(colorAccent);
+        barra.setBorder(new EmptyBorder(12, 15, 12, 15));
+
+        // Título
+        JLabel labelTitulo = new JLabel(titulo);
+        labelTitulo.setForeground(Color.WHITE);
+        labelTitulo.setFont(new Font("JetBrains Mono", Font.BOLD, 14));
+        barra.add(labelTitulo, BorderLayout.WEST);
+
+        // Panel de botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        panelBotones.setOpaque(false);
+
+        // Botón copiar
+        JButton btnCopiar = crearBotonVentana("📋 Copiar");
+        btnCopiar.addActionListener(e -> {
+            Component component = ((JPanel) ventana.getContentPane().getComponent(0))
+                    .getComponent(1);
+            if (component instanceof JScrollPane) {
+                JScrollPane scroll = (JScrollPane) component;
+                Component view = scroll.getViewport().getView();
+                if (view instanceof JTextArea) {
+                    JTextArea area = (JTextArea) view;
+                    area.selectAll();
+                    area.copy();
+                    mostrarNotificacion(ventana, "✅ Contenido copiado");
+                }
+            }
+        });
+
+        // Botón exportar
+        JButton btnExportar = crearBotonVentana("💾 Exportar");
+        btnExportar.addActionListener(e -> exportarContenidoVentana(ventana, titulo));
+
+        // Botón cerrar
+        JButton btnCerrar = crearBotonVentana("✕");
+        btnCerrar.addActionListener(e -> ventana.dispose());
+
+        panelBotones.add(btnCopiar);
+        panelBotones.add(btnExportar);
+        panelBotones.add(btnCerrar);
+
+        barra.add(panelBotones, BorderLayout.EAST);
+
+        return barra;
+    }
+
+    private JPanel crearBarraInferior(String contenido) {
+        JPanel barra = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 8));
+        barra.setBackground(BG_DARKER);
+        barra.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER_DARK));
+
+        // Contar líneas
+        int lineas = contenido != null ? contenido.split("\n").length : 0;
+        int caracteres = contenido != null ? contenido.length() : 0;
+
+        JLabel labelInfo = new JLabel(String.format("📊 %d líneas  •  %,d caracteres", lineas, caracteres));
+        labelInfo.setForeground(new Color(0x9B9B9B));
+        labelInfo.setFont(new Font("JetBrains Mono", Font.PLAIN, 11));
+
+        barra.add(labelInfo);
+
+        return barra;
+    }
+
+    private JPanel crearBarraInferiorTabla(DefaultTableModel modelo) {
+        JPanel barra = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 8));
+        barra.setBackground(BG_DARKER);
+        barra.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER_DARK));
+
+        JLabel labelInfo = new JLabel(String.format("📊 %d filas  •  %d columnas",
+                modelo.getRowCount(), modelo.getColumnCount()));
+        labelInfo.setForeground(new Color(0x9B9B9B));
+        labelInfo.setFont(new Font("JetBrains Mono", Font.PLAIN, 11));
+
+        barra.add(labelInfo);
+
+        return barra;
+    }
+
+    private JButton crearBotonVentana(String texto) {
+        JButton btn = new JButton(texto);
+        btn.setBackground(new Color(255, 255, 255, 30));
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setFont(new Font("JetBrains Mono", Font.BOLD, 11));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setPreferredSize(new Dimension(texto.length() > 3 ? 100 : 30, 28));
+
+        // Efecto hover
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            Color originalColor = btn.getBackground();
+
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btn.setBackground(new Color(255, 255, 255, 50));
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btn.setBackground(originalColor);
+            }
+        });
+
+        return btn;
+    }
+
+    private void exportarContenidoVentana(JFrame ventana, String nombreArchivo) {
         JFileChooser fc = new JFileChooser();
-        fc.setSelectedFile(new File(nombreArchivo.replace(" ", "_") + ".csv"));
+        fc.setSelectedFile(new File(nombreArchivo.replace(" ", "_") + ".txt"));
 
-        if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+        if (fc.showSaveDialog(ventana) == JFileChooser.APPROVE_OPTION) {
             try (PrintWriter writer = new PrintWriter(new FileWriter(fc.getSelectedFile()))) {
-                // Escribir encabezados
-                for (int i = 0; i < tabla.getColumnCount(); i++) {
-                    writer.print(tabla.getColumnName(i));
-                    if (i < tabla.getColumnCount() - 1)
-                        writer.print(",");
-                }
-                writer.println();
+                Component component = ((JPanel) ventana.getContentPane().getComponent(0))
+                        .getComponent(1);
 
-                // Escribir datos
-                for (int i = 0; i < tabla.getRowCount(); i++) {
-                    for (int j = 0; j < tabla.getColumnCount(); j++) {
-                        writer.print(tabla.getValueAt(i, j));
-                        if (j < tabla.getColumnCount() - 1)
-                            writer.print(",");
+                if (component instanceof JScrollPane) {
+                    JScrollPane scroll = (JScrollPane) component;
+                    Component view = scroll.getViewport().getView();
+
+                    if (view instanceof JTextArea) {
+                        JTextArea area = (JTextArea) view;
+                        writer.write(area.getText());
+                    } else if (view instanceof JTable) {
+                        JTable tabla = (JTable) view;
+                        exportarTablaArchivo(tabla, writer);
                     }
-                    writer.println();
                 }
 
-                JOptionPane.showMessageDialog(this,
-                        "Archivo exportado exitosamente",
-                        "Éxito",
-                        JOptionPane.INFORMATION_MESSAGE);
+                mostrarNotificacion(ventana, "✅ Archivo exportado exitosamente");
             } catch (IOException e) {
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(ventana,
                         "Error al exportar: " + e.getMessage(),
                         "Error",
                         JOptionPane.ERROR_MESSAGE);
@@ -580,16 +681,64 @@ public class AnalizadorFlexCupPanel extends JPanel {
         }
     }
 
+    private void mostrarNotificacion(JFrame ventana, String mensaje) {
+        JLabel notificacion = new JLabel(mensaje);
+        notificacion.setForeground(Color.WHITE);
+        notificacion.setBackground(new Color(0, 0, 0, 180));
+        notificacion.setOpaque(true);
+        notificacion.setBorder(new EmptyBorder(10, 15, 10, 15));
+        notificacion.setFont(new Font("JetBrains Mono", Font.BOLD, 12));
+
+        JWindow popup = new JWindow(ventana);
+        popup.add(notificacion);
+        popup.pack();
+        popup.setLocationRelativeTo(ventana);
+        popup.setVisible(true);
+
+        Timer timer = new Timer(2000, e -> popup.dispose());
+        timer.setRepeats(false);
+        timer.start();
+    }
+
+    private void exportarTablaArchivo(JTable tabla, PrintWriter writer) {
+        // Escribir encabezados
+        for (int i = 0; i < tabla.getColumnCount(); i++) {
+            writer.print(tabla.getColumnName(i));
+            if (i < tabla.getColumnCount() - 1)
+                writer.print("\t");
+        }
+        writer.println();
+
+        // Escribir datos
+        for (int i = 0; i < tabla.getRowCount(); i++) {
+            for (int j = 0; j < tabla.getColumnCount(); j++) {
+                Object valor = tabla.getValueAt(i, j);
+                writer.print(valor != null ? valor : "");
+                if (j < tabla.getColumnCount() - 1)
+                    writer.print("\t");
+            }
+            writer.println();
+        }
+    }
+
     private void limpiarTodo() {
         // Cerrar todas las ventanas abiertas
-        if (ventanaTokens != null)
+        if (ventanaTokens != null) {
             ventanaTokens.dispose();
-        if (ventanaSimbolos != null)
+            ventanaTokens = null;
+        }
+        if (ventanaSimbolos != null) {
             ventanaSimbolos.dispose();
-        if (ventanaTraduccion != null)
+            ventanaSimbolos = null;
+        }
+        if (ventanaTraduccion != null) {
             ventanaTraduccion.dispose();
-        if (ventanaErrores != null)
+            ventanaTraduccion = null;
+        }
+        if (ventanaErrores != null) {
             ventanaErrores.dispose();
+            ventanaErrores = null;
+        }
 
         // Limpiar áreas de texto
         areaCodigoFuente.setText("");
@@ -598,6 +747,7 @@ public class AnalizadorFlexCupPanel extends JPanel {
         areaResultadoCompilacion.setText("");
 
         archivoFuenteActual = null;
+        controlador.limpiarResultados();
 
         actualizarEstado("🔄 Limpieza completada - Listo para cargar nuevos archivos");
     }
@@ -632,7 +782,21 @@ public class AnalizadorFlexCupPanel extends JPanel {
         btn.setBorderPainted(false);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setPreferredSize(new Dimension(150, 32));
+        btn.setPreferredSize(new Dimension(texto.length() > 20 ? 180 : 150, 32));
+
+        // Efecto hover
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            Color originalColor = btn.getBackground();
+
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btn.setBackground(originalColor.brighter());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btn.setBackground(originalColor);
+            }
+        });
+
         return btn;
     }
 
@@ -644,18 +808,25 @@ public class AnalizadorFlexCupPanel extends JPanel {
         area.setCaretColor(FG_LIGHT);
         area.setLineWrap(false);
         area.setTabSize(4);
+        area.setSelectionColor(new Color(0x214283));
+        area.setSelectedTextColor(FG_LIGHT);
         return area;
     }
 
-    private JTable crearTabla(DefaultTableModel modelo) {
+    private JTable crearTablaEstilizada(DefaultTableModel modelo) {
         JTable tabla = new JTable(modelo);
         tabla.setBackground(BG_DARKER);
         tabla.setForeground(FG_LIGHT);
-        tabla.setGridColor(new Color(0x3E4047));
+        tabla.setGridColor(BORDER_DARK);
         tabla.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
+        tabla.setSelectionBackground(new Color(0x214283));
+        tabla.setSelectionForeground(FG_LIGHT);
         tabla.getTableHeader().setBackground(BG_DARK);
         tabla.getTableHeader().setForeground(FG_LIGHT);
-        tabla.setRowHeight(24);
+        tabla.getTableHeader().setFont(new Font("JetBrains Mono", Font.BOLD, 12));
+        tabla.setRowHeight(28);
+        tabla.setShowGrid(true);
+        tabla.setIntercellSpacing(new Dimension(1, 1));
         tabla.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         return tabla;
     }
@@ -665,14 +836,16 @@ public class AnalizadorFlexCupPanel extends JPanel {
         panel.setBackground(BG_DARK);
 
         TitledBorder border = BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(0x3E4047)),
+                BorderFactory.createLineBorder(BORDER_DARK),
                 titulo);
         border.setTitleColor(FG_LIGHT);
+        border.setTitleFont(new Font("JetBrains Mono", Font.BOLD, 12));
         panel.setBorder(border);
 
         JScrollPane scroll = new JScrollPane(area);
         scroll.setBackground(BG_DARKER);
         scroll.getViewport().setBackground(BG_DARKER);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
         panel.add(scroll, BorderLayout.CENTER);
 
         return panel;
@@ -683,15 +856,17 @@ public class AnalizadorFlexCupPanel extends JPanel {
         panel.setBackground(BG_DARK);
 
         TitledBorder border = BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(0x3E4047)),
+                BorderFactory.createLineBorder(BORDER_DARK),
                 titulo);
         border.setTitleColor(FG_LIGHT);
+        border.setTitleFont(new Font("JetBrains Mono", Font.BOLD, 12));
         panel.setBorder(border);
 
         if (!(componente instanceof JScrollPane)) {
             JScrollPane scroll = new JScrollPane(componente);
             scroll.setBackground(BG_DARKER);
             scroll.getViewport().setBackground(BG_DARKER);
+            scroll.setBorder(BorderFactory.createEmptyBorder());
             panel.add(scroll, BorderLayout.CENTER);
         } else {
             panel.add(componente, BorderLayout.CENTER);
