@@ -1,8 +1,8 @@
 > [!IMPORTANT]
 > Compila y ejecuta con:
 > ```bash
-> javac -cp "lib/flatlaf-3.5.jar;src" src/com/presentacion/VentanaPrincipal.java -d bin
-> java -cp "bin;lib/flatlaf-3.5.jar" com.presentacion.VentanaPrincipal
+> javac -cp "lib/*;src" src/com/presentacion/VentanaPrincipal.java -d bin
+> java -cp "bin;lib/*" com.presentacion.VentanaPrincipal
 > ```   
 
 ## Getting Started

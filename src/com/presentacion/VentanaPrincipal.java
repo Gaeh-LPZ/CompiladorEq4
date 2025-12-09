@@ -7,6 +7,7 @@ import com.presentacion.coleccionCanonica.ColeccionCanonicaPanel;
 import com.presentacion.primerosSiguientes.PrimerosSiguientesPanel;
 import com.presentacion.tablaAnalisisSintacticoLR.TablaLRPanel;
 import com.presentacion.AnalizadorProyectoFinal.AnalizadorProyectoFinalPanel;
+import com.presentacion.analizadorFlexCup.AnalizadorFlexCupPanel;
 import com.presentacion.analizadorSemantico.analizadorSemanticoPanel;
 import com.presentacion.analizadorSemanticoFinal.analizadorSemanticoFinalPanel;
 
@@ -173,6 +174,10 @@ public class VentanaPrincipal extends JFrame {
                     openAnalyzerTab("Analizador Semántico Final", new analizadorSemanticoFinalPanel());
                     break;
 
+                case "analizador_flex_bison":
+                    openAnalyzerTab("Analizador Flex-CUP", new AnalizadorFlexCupPanel());
+                    break;
+
                 default:
                     String content = dataProvider.getAlgorithmDescription(cmd);
                     if (content == null) {
@@ -236,6 +241,15 @@ class ReusableMenuBar extends JMenuBar {
     public ReusableMenuBar(DataProvider provider, ActionListener handler) {
         setBackground(new Color(0x1E1F22));
         setForeground(new Color(0xE6E9EE));
+        // Dentro del constructor de ReusableMenuBar, después del menú "Analizador
+        // semántico"
+
+        JMenu flexBison = new JMenu("Analizador Flex-CUP");
+        JMenuItem flexBisonItem = new JMenuItem("Analizador Flex-CUP - Proyecto Final");
+        flexBisonItem.setActionCommand("analizador_flex_bison");
+        flexBisonItem.addActionListener(handler);
+        flexBison.add(flexBisonItem);
+        add(flexBison);
 
         JMenu archivo = new JMenu("Salir");
         JMenuItem exit = new JMenuItem("Salir");

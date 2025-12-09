@@ -1,0 +1,270 @@
+/* parser.cup - Versión con acciones estáticas */
+import java_cup.runtime.*;
+import java.util.*;
+import java.io.*;
+
+/* Código de acciones - TODO ESTÁTICO */
+action code {:
+    public static PrintWriter archivoTraduccion;
+    public static StringBuilder codigoTraducido = new StringBuilder();
+    private static HashMap<String, String> tablaSemantica = new HashMap<>();
+    private static List<String> erroresSemanticos = new ArrayList<>();
+    
+    public static void iniciarTraduccion(String nombreArchivo) {
+        try {
+            archivoTraduccion = new PrintWriter(new FileWriter(nombreArchivo));
+            codigoTraducido = new StringBuilder();
+            codigoTraducido.append("#include <iostream>\n#include <string>\nusing namespace std;\n\n");
+        } catch (IOException e) { 
+            System.err.println("Error al iniciar traducción: " + e.getMessage());
+        }
+    }
+    
+    public static void escribir(String codigo) {
+        if (codigoTraducido == null) codigoTraducido = new StringBuilder();
+        codigoTraducido.append(codigo);
+        if (archivoTraduccion != null) {
+            archivoTraduccion.print(codigo);
+            archivoTraduccion.flush();
+        }
+    }
+    
+    public static void finalizarTraduccion() {
+        if (archivoTraduccion != null) archivoTraduccion.close();
+    }
+    
+    public static void declararVariable(String nombre, String tipo) {
+        tablaSemantica.put(nombre, tipo);
+    }
+    
+    public static List<String> getErroresSemanticos() {
+        return erroresSemanticos;
+    }
+    
+    public static String traducirTipo(String t) {
+        return t.equals("String") ? "string" : t.equals("boolean") ? "bool" : t;
+    }
+    
+    public static StringBuilder getCodigoTraducido() {
+        return codigoTraducido;
+    }
+:}
+
+/* Código del parser */
+parser code {:
+    public void report_error(String message, Object info) {
+        System.err.println("Error: " + message);
+    }
+    
+    public void report_fatal_error(String message, Object info) {
+        report_error(message, info);
+        System.err.println("Análisis abortado");
+    }
+:}
+
+/* Inicialización */
+init with {: CUP$parser$actions.iniciarTraduccion("salida/traduccion.cpp"); :};
+scan with {: return getScanner().next_token(); :};
+
+/* Terminales */
+terminal PUBLIC, CLASS, STATIC, VOID, MAIN;
+terminal INT, FLOAT, BOOLEAN, STRING;
+terminal IF, ELSE, FOR, WHILE, DO, SWITCH, CASE, DEFAULT, BREAK;
+terminal SYSTEM, OUT, PRINTLN, PACKAGE, IMPORT, RETURN;
+terminal SUMA, RESTA, MULTIPLICACION, DIVISION, MODULO;
+terminal ASIGNACION, ASIG_SUMA, ASIG_RESTA, ASIG_MULT, ASIG_DIV;
+terminal INCREMENTO, DECREMENTO;
+terminal AND, OR, NOT;
+terminal MENOR_QUE, MAYOR_QUE, IGUAL_IGUAL, DIFERENTE;
+terminal LLAVE_IZQ, LLAVE_DER, PARENTESIS_IZQ, PARENTESIS_DER;
+terminal CORCHETE_IZQ, CORCHETE_DER;
+terminal PUNTO_COMA, PUNTO, COMA, DOS_PUNTOS;
+terminal String IDENTIFICADOR;
+terminal Integer NUMERO_ENTERO;
+terminal Float NUMERO_FLOTANTE;
+terminal String LITERAL;
+
+/* Non-terminals */
+non terminal programa, pkg_opt, imp_list, imp_decl, clase, metodos, metodo, main_m;
+non terminal bloque, sents_opt, sents, sent, decl, asig, inc_dec;
+non terminal ctrl, if_s, else_opt, for_s, while_s, do_while_s, switch_s;
+non terminal cases, case_s, def_opt, ret, call;
+non terminal String tipo, expr, term, fact, cond, relacional, logica, arg_single, arg_concat;
+
+/* Precedencias */
+precedence left OR;
+precedence left AND;
+precedence nonassoc IGUAL_IGUAL, DIFERENTE, MENOR_QUE, MAYOR_QUE;
+precedence left SUMA, RESTA;
+precedence left MULTIPLICACION, DIVISION, MODULO;
+
+start with programa;
+
+programa ::= pkg_opt imp_list clase {: CUP$parser$actions.finalizarTraduccion(); :} ;
+
+pkg_opt ::= PACKAGE IDENTIFICADOR PUNTO_COMA
+    | PACKAGE IDENTIFICADOR PUNTO IDENTIFICADOR PUNTO_COMA
+    | /* empty */ ;
+
+imp_list ::= imp_decl imp_list | /* empty */ ;
+
+imp_decl ::= IMPORT IDENTIFICADOR PUNTO IDENTIFICADOR PUNTO_COMA
+    | IMPORT IDENTIFICADOR PUNTO MULTIPLICACION PUNTO_COMA ;
+
+clase ::= PUBLIC CLASS IDENTIFICADOR:n LLAVE_IZQ
+    {: CUP$parser$actions.escribir("// Clase " + n + "\n\n"); :}
+    metodos LLAVE_DER ;
+
+metodos ::= metodo metodos | metodo ;
+
+metodo ::= main_m
+    | PUBLIC VOID IDENTIFICADOR PARENTESIS_IZQ tipo IDENTIFICADOR COMA tipo IDENTIFICADOR PARENTESIS_DER bloque
+    | PUBLIC tipo IDENTIFICADOR PARENTESIS_IZQ tipo IDENTIFICADOR COMA tipo IDENTIFICADOR PARENTESIS_DER bloque ;
+
+main_m ::= PUBLIC STATIC VOID MAIN PARENTESIS_IZQ STRING CORCHETE_IZQ CORCHETE_DER IDENTIFICADOR PARENTESIS_DER
+    {: CUP$parser$actions.escribir("int main(int argc, char *argv[]) {\n"); :}
+    bloque
+    {: CUP$parser$actions.escribir("}\n"); :} ;
+
+bloque ::= LLAVE_IZQ sents_opt LLAVE_DER ;
+sents_opt ::= sents | /* empty */ ;
+sents ::= sent sents | sent ;
+
+sent ::= decl | asig | inc_dec | ctrl | call PUNTO_COMA | ret | bloque | expr PUNTO_COMA ;
+
+decl ::= tipo:t IDENTIFICADOR:n PUNTO_COMA
+    {: CUP$parser$actions.declararVariable(n, t);
+       CUP$parser$actions.escribir("    " + CUP$parser$actions.traducirTipo(t) + " " + n + ";\n"); :}
+    | tipo:t IDENTIFICADOR:n COMA IDENTIFICADOR:n2 PUNTO_COMA
+    {: CUP$parser$actions.declararVariable(n, t);
+       CUP$parser$actions.declararVariable(n2, t);
+       CUP$parser$actions.escribir("    " + CUP$parser$actions.traducirTipo(t) + " " + n + ", " + n2 + ";\n"); :}
+    | tipo:t IDENTIFICADOR:n ASIGNACION expr:e PUNTO_COMA
+    {: CUP$parser$actions.declararVariable(n, t);
+       CUP$parser$actions.escribir("    " + CUP$parser$actions.traducirTipo(t) + " " + n + " = " + e + ";\n"); :}
+    | tipo:t IDENTIFICADOR:n COMA IDENTIFICADOR:n2 ASIGNACION expr:e PUNTO_COMA
+    {: CUP$parser$actions.declararVariable(n, t);
+       CUP$parser$actions.declararVariable(n2, t);
+       CUP$parser$actions.escribir("    " + CUP$parser$actions.traducirTipo(t) + " " + n + ", " + n2 + " = " + e + ";\n"); :}
+    | tipo CORCHETE_IZQ CORCHETE_DER IDENTIFICADOR:n PUNTO_COMA
+    {: CUP$parser$actions.escribir("    // array: " + n + "\n"); :} ;
+
+tipo ::= INT {: RESULT = "int"; :}
+    | FLOAT {: RESULT = "float"; :}
+    | BOOLEAN {: RESULT = "boolean"; :}
+    | STRING {: RESULT = "String"; :} ;
+
+asig ::= IDENTIFICADOR:n ASIGNACION expr:e PUNTO_COMA
+    {: CUP$parser$actions.escribir("    " + n + " = " + e + ";\n"); :}
+    | IDENTIFICADOR:n ASIG_SUMA expr:e PUNTO_COMA
+    {: CUP$parser$actions.escribir("    " + n + " += " + e + ";\n"); :}
+    | IDENTIFICADOR:n ASIG_RESTA expr:e PUNTO_COMA
+    {: CUP$parser$actions.escribir("    " + n + " -= " + e + ";\n"); :}
+    | IDENTIFICADOR:n ASIG_MULT expr:e PUNTO_COMA
+    {: CUP$parser$actions.escribir("    " + n + " *= " + e + ";\n"); :}
+    | IDENTIFICADOR:n ASIG_DIV expr:e PUNTO_COMA
+    {: CUP$parser$actions.escribir("    " + n + " /= " + e + ";\n"); :} ;
+
+inc_dec ::= IDENTIFICADOR:n INCREMENTO PUNTO_COMA
+    {: CUP$parser$actions.escribir("    " + n + "++;\n"); :}
+    | IDENTIFICADOR:n DECREMENTO PUNTO_COMA
+    {: CUP$parser$actions.escribir("    " + n + "--;\n"); :} ;
+
+ctrl ::= if_s | for_s | while_s | do_while_s | switch_s ;
+
+if_s ::= IF PARENTESIS_IZQ cond:c PARENTESIS_DER
+    {: CUP$parser$actions.escribir("    if (" + c + ") {\n"); :}
+    bloque else_opt
+    {: CUP$parser$actions.escribir("    }\n"); :} ;
+
+else_opt ::= ELSE {: CUP$parser$actions.escribir("    else {\n"); :} bloque | /* empty */ ;
+
+for_s ::= FOR PARENTESIS_IZQ IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 INCREMENTO PARENTESIS_DER
+    {: CUP$parser$actions.escribir("    for (" + v + " = " + e + "; " + c + "; " + v2 + "++) {\n"); :}
+    bloque {: CUP$parser$actions.escribir("    }\n"); :}
+    | FOR PARENTESIS_IZQ IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 DECREMENTO PARENTESIS_DER
+    {: CUP$parser$actions.escribir("    for (" + v + " = " + e + "; " + c + "; " + v2 + "--) {\n"); :}
+    bloque {: CUP$parser$actions.escribir("    }\n"); :}
+    | FOR PARENTESIS_IZQ tipo:t IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 INCREMENTO PARENTESIS_DER
+    {: CUP$parser$actions.declararVariable(v, t);
+       CUP$parser$actions.escribir("    for (" + t + " " + v + " = " + e + "; " + c + "; " + v2 + "++) {\n"); :}
+    bloque {: CUP$parser$actions.escribir("    }\n"); :}
+    | FOR PARENTESIS_IZQ IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA expr PARENTESIS_DER
+    {: CUP$parser$actions.escribir("    for (" + v + " = " + e + "; " + c + "; /* expr */) {\n"); :}
+    bloque {: CUP$parser$actions.escribir("    }\n"); :}
+    | FOR PARENTESIS_IZQ tipo:t IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA expr PARENTESIS_DER
+    {: CUP$parser$actions.declararVariable(v, t);
+       CUP$parser$actions.escribir("    for (" + t + " " + v + " = " + e + "; " + c + "; /* expr */) {\n"); :}
+    bloque {: CUP$parser$actions.escribir("    }\n"); :} ;
+
+while_s ::= WHILE PARENTESIS_IZQ cond:c PARENTESIS_DER
+    {: CUP$parser$actions.escribir("    while (" + c + ") {\n"); :}
+    bloque {: CUP$parser$actions.escribir("    }\n"); :} ;
+
+do_while_s ::= DO {: CUP$parser$actions.escribir("    do {\n"); :}
+    bloque WHILE PARENTESIS_IZQ cond:c PARENTESIS_DER PUNTO_COMA
+    {: CUP$parser$actions.escribir("    } while (" + c + ");\n"); :} ;
+
+switch_s ::= SWITCH PARENTESIS_IZQ IDENTIFICADOR:v PARENTESIS_DER LLAVE_IZQ
+    {: CUP$parser$actions.escribir("    switch (" + v + ") {\n"); :}
+    cases def_opt LLAVE_DER
+    {: CUP$parser$actions.escribir("    }\n"); :} ;
+
+cases ::= case_s cases | case_s ;
+
+case_s ::= CASE NUMERO_ENTERO:n DOS_PUNTOS
+    {: CUP$parser$actions.escribir("        case " + n + ":\n"); :}
+    sents_opt BREAK PUNTO_COMA
+    {: CUP$parser$actions.escribir("            break;\n"); :} ;
+
+def_opt ::= DEFAULT DOS_PUNTOS
+    {: CUP$parser$actions.escribir("        default:\n"); :}
+    sents_opt | /* empty */ ;
+
+ret ::= RETURN expr:e PUNTO_COMA
+    {: CUP$parser$actions.escribir("    return " + e + ";\n"); :} ;
+
+call ::= SYSTEM PUNTO OUT PUNTO PRINTLN PARENTESIS_IZQ arg_concat:a PARENTESIS_DER
+    {: CUP$parser$actions.escribir("    cout << " + a + " << endl;\n"); :}
+    | SYSTEM PUNTO OUT PUNTO PRINTLN PARENTESIS_IZQ arg_single:a PARENTESIS_DER
+    {: CUP$parser$actions.escribir("    cout << " + a + " << endl;\n"); :}
+    | IDENTIFICADOR:n PARENTESIS_IZQ PARENTESIS_DER
+    {: CUP$parser$actions.escribir("    " + n + "();\n"); :} ;
+
+arg_single ::= LITERAL:l {: RESULT = l; :}
+    | NUMERO_ENTERO:n {: RESULT = n.toString(); :}
+    | NUMERO_FLOTANTE:f {: RESULT = f.toString(); :}
+    | IDENTIFICADOR:n {: RESULT = n; :} ;
+
+arg_concat ::= arg_single:a1 SUMA arg_single:a2 {: RESULT = a1 + " << \" \" << " + a2; :}
+    | arg_concat:ac SUMA arg_single:a {: RESULT = ac + " << \" \" << " + a; :} ;
+
+cond ::= relacional:r {: RESULT = r; :}
+    | logica:l {: RESULT = l; :}
+    | IDENTIFICADOR:n {: RESULT = n; :} ;
+
+relacional ::= expr:e1 MENOR_QUE expr:e2 {: RESULT = e1 + " < " + e2; :}
+    | expr:e1 MAYOR_QUE expr:e2 {: RESULT = e1 + " > " + e2; :}
+    | expr:e1 IGUAL_IGUAL expr:e2 {: RESULT = e1 + " == " + e2; :}
+    | expr:e1 DIFERENTE expr:e2 {: RESULT = e1 + " != " + e2; :} ;
+
+logica ::= relacional:r1 AND relacional:r2 {: RESULT = r1 + " && " + r2; :}
+    | relacional:r1 OR relacional:r2 {: RESULT = r1 + " || " + r2; :}
+    | IDENTIFICADOR:n1 AND IDENTIFICADOR:n2 {: RESULT = n1 + " && " + n2; :}
+    | IDENTIFICADOR:n1 OR IDENTIFICADOR:n2 {: RESULT = n1 + " || " + n2; :}
+    | relacional:r AND IDENTIFICADOR:n {: RESULT = r + " && " + n; :}
+    | IDENTIFICADOR:n AND relacional:r {: RESULT = n + " && " + r; :} ;
+
+expr ::= term:t {: RESULT = t; :}
+    | expr:e SUMA term:t {: RESULT = e + " + " + t; :}
+    | expr:e RESTA term:t {: RESULT = e + " - " + t; :} ;
+
+term ::= fact:f {: RESULT = f; :}
+    | term:t MULTIPLICACION fact:f {: RESULT = t + " * " + f; :}
+    | term:t DIVISION fact:f {: RESULT = t + " / " + f; :}
+    | term:t MODULO fact:f {: RESULT = t + " % " + f; :} ;
+
+fact ::= NUMERO_ENTERO:n {: RESULT = n.toString(); :}
+    | NUMERO_FLOTANTE:n {: RESULT = n.toString(); :}
+    | IDENTIFICADOR:n {: RESULT = n; :}
+    | PARENTESIS_IZQ expr:e PARENTESIS_DER {: RESULT = "(" + e + ")"; :} ;
