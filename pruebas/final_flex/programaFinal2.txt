@@ -67,7 +67,7 @@ public class Prueba {
         return 0;
     }
 
-    public void adicion(int a, int b) {
+    public int adicion(int a, int b) {
         return a + b;
     }
 }

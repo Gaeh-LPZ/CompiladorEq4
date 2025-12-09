@@ -312,27 +312,41 @@ else_opt ::= ELSE
     {: action_obj.escribir("    }\n"); :}
     | /* empty */ ;
 
-for_s ::= FOR PARENTESIS_IZQ IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 INCREMENTO PARENTESIS_DER
+for_s ::= 
+    /* 1. Caso simple con incremento: for(i=0; i<10; i++) */
+    FOR PARENTESIS_IZQ IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 INCREMENTO PARENTESIS_DER
     {: action_obj.escribir("    for (" + v + " = " + e + "; " + c + "; " + v2 + "++) {\n"); :}
     bloque {: action_obj.escribir("    }\n"); :}
+
+    /* 2. Caso simple con decremento: for(i=10; i>0; i--) */
     | FOR PARENTESIS_IZQ IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 DECREMENTO PARENTESIS_DER
     {: action_obj.escribir("    for (" + v + " = " + e + "; " + c + "; " + v2 + "--) {\n"); :}
     bloque {: action_obj.escribir("    }\n"); :}
+
+    /* 3. Caso declarando variable con incremento: for(int i=0; i<10; i++) */
     | FOR PARENTESIS_IZQ tipo:t IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 INCREMENTO PARENTESIS_DER
     {: action_obj.declararVariable(v, t);
        action_obj.escribir("    for (" + t + " " + v + " = " + e + "; " + c + "; " + v2 + "++) {\n"); :}
     bloque {: action_obj.escribir("    }\n"); :}
+
+    /* 4. Caso declarando variable con decremento: for(int i=10; i>0; i--) */
     | FOR PARENTESIS_IZQ tipo:t IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 DECREMENTO PARENTESIS_DER
     {: action_obj.declararVariable(v, t);
        action_obj.escribir("    for (" + t + " " + v + " = " + e + "; " + c + "; " + v2 + "--) {\n"); :}
     bloque {: action_obj.escribir("    }\n"); :}
-    | FOR PARENTESIS_IZQ IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA expr PARENTESIS_DER
-    {: action_obj.escribir("    for (" + v + " = " + e + "; " + c + "; /* expr */) {\n"); :}
+
+    /* 5. Caso con EXPRESIÓN GENERAL (CORREGIDO): for(i=0; i<10; i+1) */
+    /* Se agregó ':ex' para capturar el valor y se usa '+ ex +' en el print */
+    | FOR PARENTESIS_IZQ IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA expr:ex PARENTESIS_DER
+    {: action_obj.escribir("    for (" + v + " = " + e + "; " + c + "; " + ex + ") {\n"); :}
     bloque {: action_obj.escribir("    }\n"); :}
-    | FOR PARENTESIS_IZQ tipo:t IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA expr PARENTESIS_DER
+
+    /* 6. Caso declarando variable con EXPRESIÓN GENERAL (CORREGIDO) */
+    | FOR PARENTESIS_IZQ tipo:t IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA expr:ex PARENTESIS_DER
     {: action_obj.declararVariable(v, t);
-       action_obj.escribir("    for (" + t + " " + v + " = " + e + "; " + c + "; /* expr */) {\n"); :}
-    bloque {: action_obj.escribir("    }\n"); :} ;
+       action_obj.escribir("    for (" + t + " " + v + " = " + e + "; " + c + "; " + ex + ") {\n"); :}
+    bloque {: action_obj.escribir("    }\n"); :} 
+    ;
 
 while_s ::= WHILE PARENTESIS_IZQ cond:c PARENTESIS_DER
     {: action_obj.escribir("    while (" + c + ") {\n"); :}
@@ -392,7 +406,10 @@ logica ::= relacional:r1 AND relacional:r2 {: RESULT = r1 + " && " + r2; :}
     | IDENTIFICADOR:n1 AND IDENTIFICADOR:n2 {: RESULT = n1 + " && " + n2; :}
     | IDENTIFICADOR:n1 OR IDENTIFICADOR:n2 {: RESULT = n1 + " || " + n2; :}
     | relacional:r AND IDENTIFICADOR:n {: RESULT = r + " && " + n; :}
-    | IDENTIFICADOR:n AND relacional:r {: RESULT = n + " && " + r; :} ;
+    | IDENTIFICADOR:n AND relacional:r {: RESULT = n + " && " + r; :}
+    | relacional:r OR IDENTIFICADOR:n {: RESULT = r + " || " + n; :}
+    | IDENTIFICADOR:n OR relacional:r {: RESULT = n + " || " + r; :} 
+    ;
 
 expr ::= term:t {: RESULT = t; :}
     | expr:e SUMA term:t {: RESULT = e + " + " + t; :}
