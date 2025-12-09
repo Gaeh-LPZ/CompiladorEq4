@@ -9,6 +9,14 @@ action code {:
     public static StringBuilder codigoTraducido = new StringBuilder();
     private static HashMap<String, String> tablaSemantica = new HashMap<>();
     private static List<String> erroresSemanticos = new ArrayList<>();
+
+    // --- CLASE AUXILIAR NUEVA PARA MANEJAR LISTAS DE VARIABLES ---
+    static class VarInfo {
+        String name;
+        String value; // null si no tiene asignación
+        public VarInfo(String n, String v) { this.name = n; this.value = v; }
+    }
+    // -------------------------------------------------------------
     
     public static void iniciarTraduccion(String nombreArchivo) {
         try {
@@ -80,6 +88,7 @@ terminal ASIGNACION, ASIG_SUMA, ASIG_RESTA, ASIG_MULT, ASIG_DIV;
 terminal INCREMENTO, DECREMENTO;
 terminal AND, OR, NOT;
 terminal MENOR_QUE, MAYOR_QUE, IGUAL_IGUAL, DIFERENTE;
+terminal MENOR_IGUAL, MAYOR_IGUAL;
 terminal LLAVE_IZQ, LLAVE_DER, PARENTESIS_IZQ, PARENTESIS_DER;
 terminal CORCHETE_IZQ, CORCHETE_DER;
 terminal PUNTO_COMA, PUNTO, COMA, DOS_PUNTOS;
@@ -99,6 +108,9 @@ non terminal decl_miembro, decl_local, asig, inc_dec;
 non terminal ctrl, if_s, else_opt, for_s, while_s, do_while_s, switch_s;
 non terminal cases, case_s, def_opt, ret, call;
 non terminal String tipo, expr, term, fact, cond, relacional, logica, arg_single, arg_concat;
+non terminal List<VarInfo> lista_vars;
+non terminal VarInfo var_part;
+non terminal String nombre_completo;
 
 /* Precedencias */
 precedence left OR;
@@ -106,26 +118,31 @@ precedence left AND;
 precedence nonassoc IGUAL_IGUAL, DIFERENTE, MENOR_QUE, MAYOR_QUE;
 precedence left SUMA, RESTA;
 precedence left MULTIPLICACION, DIVISION, MODULO;
+precedence nonassoc MENOR_IGUAL, MAYOR_IGUAL;
 
 start with programa;
 
 programa ::= pkg_opt imp_list clase {: action_obj.finalizarTraduccion(); :} ;
 
-pkg_opt ::= PACKAGE IDENTIFICADOR PUNTO_COMA
-    | PACKAGE IDENTIFICADOR PUNTO IDENTIFICADOR PUNTO_COMA
+pkg_opt ::= PACKAGE nombre_completo PUNTO_COMA
     | /* empty */ ;
 
-imp_list ::= imp_decl imp_list | /* empty */ ;
+imp_list ::= imp_list imp_decl 
+    | /* empty */ ;
 
-imp_decl ::= IMPORT IDENTIFICADOR PUNTO IDENTIFICADOR PUNTO_COMA
-    | IMPORT IDENTIFICADOR PUNTO IDENTIFICADOR PUNTO IDENTIFICADOR PUNTO_COMA
-    | IMPORT IDENTIFICADOR PUNTO MULTIPLICACION PUNTO_COMA ;
+imp_decl ::= IMPORT nombre_completo PUNTO_COMA
+    | IMPORT nombre_completo PUNTO MULTIPLICACION PUNTO_COMA ;
 
 clase ::= PUBLIC CLASS IDENTIFICADOR:n herencia_opt implementa_opt LLAVE_IZQ
     {: action_obj.escribir("// Clase " + n + "\n\n"); :}
     miembros LLAVE_DER ;
 
 herencia_opt ::= EXTENDS IDENTIFICADOR | /* empty */ ;
+
+nombre_completo ::= IDENTIFICADOR:id
+    {: RESULT = id; :}
+    | nombre_completo:p PUNTO IDENTIFICADOR:id
+    {: RESULT = p + "." + id; :};
 
 implementa_opt ::= IMPLEMENTS IDENTIFICADOR | /* empty */ ;
 
@@ -214,32 +231,50 @@ sents_opt ::= sents | /* empty */ ;
 
 sents ::= sent sents | sent ;
 
-sent ::= decl_local 
-    | asig 
-    | inc_dec 
-    | ctrl 
-    | call PUNTO_COMA 
-    | ret 
-    | bloque 
-    | expr PUNTO_COMA ;
+sent ::= decl_local | asig | inc_dec | ctrl | call PUNTO_COMA | ret | bloque | expr PUNTO_COMA 
+      | BREAK PUNTO_COMA {: action_obj.escribir("    break;\n"); :} ;
 
-/* Declaraciones locales (sin modificadores) */
-decl_local ::= tipo:t IDENTIFICADOR:n PUNTO_COMA
-    {: action_obj.declararVariable(n, t);
-       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + ";\n"); :}
-    | tipo:t IDENTIFICADOR:n COMA IDENTIFICADOR:n2 PUNTO_COMA
-    {: action_obj.declararVariable(n, t);
-       action_obj.declararVariable(n2, t);
-       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + ", " + n2 + ";\n"); :}
-    | tipo:t IDENTIFICADOR:n ASIGNACION expr:e PUNTO_COMA
-    {: action_obj.declararVariable(n, t);
-       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + " = " + e + ";\n"); :}
-    | tipo:t IDENTIFICADOR:n COMA IDENTIFICADOR:n2 ASIGNACION expr:e PUNTO_COMA
-    {: action_obj.declararVariable(n, t);
-       action_obj.declararVariable(n2, t);
-       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + ", " + n2 + " = " + e + ";\n"); :}
+/* Declaraciones locales GENERALES (recursivas) */
+decl_local ::= tipo:t lista_vars:l PUNTO_COMA
+    {: 
+        // Recorremos la lista de variables detectadas
+        for(VarInfo v : l) {
+            // 1. Semántica: Registrar en tabla de símbolos
+            action_obj.declararVariable(v.name, t);
+            
+            // 2. Traducción: Generar código C++
+            String tipoTraducido = action_obj.traducirTipo(t);
+            if(v.value == null) {
+                // Caso: int a;
+                action_obj.escribir("    " + tipoTraducido + " " + v.name + ";\n");
+            } else {
+                // Caso: int a = 5;
+                action_obj.escribir("    " + tipoTraducido + " " + v.name + " = " + v.value + ";\n");
+            }
+        }
+    :} 
     | tipo CORCHETE_IZQ CORCHETE_DER IDENTIFICADOR:n PUNTO_COMA
-    {: action_obj.escribir("    // array: " + n + "\n"); :} ;
+    {: action_obj.escribir("    // array: " + n + " (Pendiente de implementar traducción)\n"); :} 
+    ;
+
+/* Reglas recursivas para lista de variables (ej: a, b=1, c) */
+lista_vars ::= var_part:v
+    {: 
+        List<VarInfo> l = new ArrayList<>(); 
+        l.add(v); 
+        RESULT = l; 
+    :}
+    | lista_vars:l COMA var_part:v
+    {: 
+        l.add(v); 
+        RESULT = l; 
+    :};
+
+/* Una variable individual (con o sin valor) */
+var_part ::= IDENTIFICADOR:n
+    {: RESULT = new VarInfo(n, null); :}
+    | IDENTIFICADOR:n ASIGNACION expr:e
+    {: RESULT = new VarInfo(n, e); :};
 
 tipo ::= INT {: RESULT = "int"; :}
     | FLOAT {: RESULT = "float"; :}
@@ -316,8 +351,10 @@ cases ::= case_s cases | case_s ;
 
 case_s ::= CASE NUMERO_ENTERO:n DOS_PUNTOS
     {: action_obj.escribir("        case " + n + ":\n"); :}
-    sents_opt BREAK PUNTO_COMA
-    {: action_obj.escribir("            break;\n"); :} ;
+    sents_opt 
+    /* Ya no forzamos BREAK aquí. Si el usuario lo pone, 
+       se procesará gracias a la regla nueva en 'sent' */
+    ;
 
 def_opt ::= DEFAULT DOS_PUNTOS
     {: action_obj.escribir("        default:\n"); :}
@@ -333,10 +370,7 @@ call ::= SYSTEM PUNTO OUT PUNTO PRINTLN PARENTESIS_IZQ arg_concat:a PARENTESIS_D
     | IDENTIFICADOR:n PARENTESIS_IZQ PARENTESIS_DER
     {: action_obj.escribir("    " + n + "();\n"); :} ;
 
-arg_single ::= LITERAL:l {: RESULT = l; :}
-    | NUMERO_ENTERO:n {: RESULT = n.toString(); :}
-    | NUMERO_FLOTANTE:f {: RESULT = f.toString(); :}
-    | IDENTIFICADOR:n {: RESULT = n; :} ;
+arg_single ::= expr:e {: RESULT = e; :};
 
 arg_concat ::= arg_single:a1 SUMA arg_single:a2 {: RESULT = a1 + " << \" \" << " + a2; :}
     | arg_concat:ac SUMA arg_single:a {: RESULT = ac + " << \" \" << " + a; :} ;
@@ -348,7 +382,10 @@ cond ::= relacional:r {: RESULT = r; :}
 relacional ::= expr:e1 MENOR_QUE expr:e2 {: RESULT = e1 + " < " + e2; :}
     | expr:e1 MAYOR_QUE expr:e2 {: RESULT = e1 + " > " + e2; :}
     | expr:e1 IGUAL_IGUAL expr:e2 {: RESULT = e1 + " == " + e2; :}
-    | expr:e1 DIFERENTE expr:e2 {: RESULT = e1 + " != " + e2; :} ;
+    | expr:e1 DIFERENTE expr:e2 {: RESULT = e1 + " != " + e2; :}
+    /* --- NUEVAS REGLAS --- */
+    | expr:e1 MENOR_IGUAL expr:e2 {: RESULT = e1 + " <= " + e2; :}
+    | expr:e1 MAYOR_IGUAL expr:e2 {: RESULT = e1 + " >= " + e2; :} ;
 
 logica ::= relacional:r1 AND relacional:r2 {: RESULT = r1 + " && " + r2; :}
     | relacional:r1 OR relacional:r2 {: RESULT = r1 + " || " + r2; :}
@@ -369,4 +406,5 @@ term ::= fact:f {: RESULT = f; :}
 fact ::= NUMERO_ENTERO:n {: RESULT = n.toString(); :}
     | NUMERO_FLOTANTE:n {: RESULT = n.toString(); :}
     | IDENTIFICADOR:n {: RESULT = n; :}
+    | LITERAL:l {: RESULT = l; :}  /* <--- NUEVO: Permite strings en expresiones */
     | PARENTESIS_IZQ expr:e PARENTESIS_DER {: RESULT = "(" + e + ")"; :} ;

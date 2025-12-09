@@ -140,6 +140,8 @@ COMENTARIO = "//".*
 "!=" { escribirTiraTokens("DIFERENTE", yytext()); return symbol(sym.DIFERENTE); }
 "<" { escribirTiraTokens("MENOR_QUE", yytext()); return symbol(sym.MENOR_QUE); }
 ">" { escribirTiraTokens("MAYOR_QUE", yytext()); return symbol(sym.MAYOR_QUE); }
+"<=" { escribirTiraTokens("MENOR_IGUAL", yytext()); return symbol(sym.MENOR_IGUAL); }
+">=" { escribirTiraTokens("MAYOR_IGUAL", yytext()); return symbol(sym.MAYOR_IGUAL); }
 
 /* Operadores aritméticos */
 "+" { escribirTiraTokens("SUMA", yytext()); return symbol(sym.SUMA); }
