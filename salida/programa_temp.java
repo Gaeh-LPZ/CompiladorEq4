@@ -1,9 +1,34 @@
-public class PruebaSimple {
-    public static void main(String[] args) {
-        int a;
-        int b;
-        a = 5;
-        b = 10;
-        System.out.println("Hola mundo");
+public class Prueba {
+    public static void main(String[] args){
+        int a, b;
+        int categ = 2;
+        float sueldo;
+        int c;
+        float nsueldo;
+        int i;
+
+        System.out.println("Teclea dos numeros enteros");
+
+        c = a % 2;
+
+        if (c == 0) {
+            System.out.println("es par");
+        } else {
+            c = c - 1;
+        }
+
+        switch (categ) {
+            case 1:
+                nsueldo = sueldo;
+                break;
+            case 2: 
+                break;
+            default:
+                nsueldo = sueldo;
+        }
+
+        for (i = 5; i >= 0; i--){
+            System.out.println("valor");
+        }
     }
 }

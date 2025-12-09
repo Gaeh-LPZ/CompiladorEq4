@@ -76,7 +76,7 @@ LETRA = [a-zA-Z]
 DIGITO = [0-9]
 ESPACIO = [ \t\r]
 NUEVALINEA = \n
-IDENTIFICADOR = {LETRA}({LETRA}|{DIGITO})*
+IDENTIFICADOR = {LETRA}({LETRA}|{DIGITO}|_)*
 NUMERO_ENTERO = {DIGITO}+
 NUMERO_FLOTANTE = {DIGITO}+(\.{DIGITO}+)?
 LITERAL = \"([^\\\"]|\\.)*\"
@@ -84,6 +84,7 @@ COMENTARIO = "//".*
 
 %%
 
+/* Operadores de asignación compuestos */
 "+=" { escribirTiraTokens("ASIG_SUMA", yytext()); return symbol(sym.ASIG_SUMA); }
 "-=" { escribirTiraTokens("ASIG_RESTA", yytext()); return symbol(sym.ASIG_RESTA); }
 "/=" { escribirTiraTokens("ASIG_DIV", yytext()); return symbol(sym.ASIG_DIV); }
@@ -91,10 +92,16 @@ COMENTARIO = "//".*
 "++" { escribirTiraTokens("INCREMENTO", yytext()); return symbol(sym.INCREMENTO); }
 "--" { escribirTiraTokens("DECREMENTO", yytext()); return symbol(sym.DECREMENTO); }
 
+/* Palabras reservadas - ORDEN IMPORTANTE: más específicas primero */
 "int" { escribirTiraTokens("INT", yytext()); return symbol(sym.INT); }
 "public" { escribirTiraTokens("PUBLIC", yytext()); return symbol(sym.PUBLIC); }
+"private" { escribirTiraTokens("PRIVATE", yytext()); return symbol(sym.PRIVATE); }
+"protected" { escribirTiraTokens("PROTECTED", yytext()); return symbol(sym.PROTECTED); }
 "class" { escribirTiraTokens("CLASS", yytext()); return symbol(sym.CLASS); }
 "static" { escribirTiraTokens("STATIC", yytext()); return symbol(sym.STATIC); }
+"extends" { escribirTiraTokens("EXTENDS", yytext()); return symbol(sym.EXTENDS); }
+"implements" { escribirTiraTokens("IMPLEMENTS", yytext()); return symbol(sym.IMPLEMENTS); }
+"new" { escribirTiraTokens("NEW", yytext()); return symbol(sym.NEW); }
 "if" { escribirTiraTokens("IF", yytext()); return symbol(sym.IF); }
 "for" { escribirTiraTokens("FOR", yytext()); return symbol(sym.FOR); }
 "while" { escribirTiraTokens("WHILE", yytext()); return symbol(sym.WHILE); }
@@ -116,6 +123,7 @@ COMENTARIO = "//".*
 "default" { escribirTiraTokens("DEFAULT", yytext()); return symbol(sym.DEFAULT); }
 "break" { escribirTiraTokens("BREAK", yytext()); return symbol(sym.BREAK); }
 
+/* Delimitadores */
 "{" { escribirTiraTokens("LLAVE_IZQ", yytext()); return symbol(sym.LLAVE_IZQ); }
 "}" { escribirTiraTokens("LLAVE_DER", yytext()); return symbol(sym.LLAVE_DER); }
 ";" { escribirTiraTokens("PUNTO_COMA", yytext()); return symbol(sym.PUNTO_COMA); }
@@ -127,11 +135,13 @@ COMENTARIO = "//".*
 "," { escribirTiraTokens("COMA", yytext()); return symbol(sym.COMA); }
 ":" { escribirTiraTokens("DOS_PUNTOS", yytext()); return symbol(sym.DOS_PUNTOS); }
 
+/* Operadores relacionales - ANTES que operadores individuales */
 "==" { escribirTiraTokens("IGUAL_IGUAL", yytext()); return symbol(sym.IGUAL_IGUAL); }
 "!=" { escribirTiraTokens("DIFERENTE", yytext()); return symbol(sym.DIFERENTE); }
 "<" { escribirTiraTokens("MENOR_QUE", yytext()); return symbol(sym.MENOR_QUE); }
 ">" { escribirTiraTokens("MAYOR_QUE", yytext()); return symbol(sym.MAYOR_QUE); }
 
+/* Operadores aritméticos */
 "+" { escribirTiraTokens("SUMA", yytext()); return symbol(sym.SUMA); }
 "-" { escribirTiraTokens("RESTA", yytext()); return symbol(sym.RESTA); }
 "/" { escribirTiraTokens("DIVISION", yytext()); return symbol(sym.DIVISION); }
@@ -139,20 +149,24 @@ COMENTARIO = "//".*
 "*" { escribirTiraTokens("MULTIPLICACION", yytext()); return symbol(sym.MULTIPLICACION); }
 "=" { escribirTiraTokens("ASIGNACION", yytext()); return symbol(sym.ASIGNACION); }
 
+/* Operadores lógicos */
 "&&" { escribirTiraTokens("AND", yytext()); return symbol(sym.AND); }
 "||" { escribirTiraTokens("OR", yytext()); return symbol(sym.OR); }
 "!" { escribirTiraTokens("NOT", yytext()); return symbol(sym.NOT); }
 
+/* Espacios y comentarios */
 {ESPACIO}+ { /* Ignorar */ }
 {COMENTARIO} { /* Ignorar */ }
 {NUEVALINEA} { /* Ignorar */ }
 
+/* Identificadores - DESPUÉS de las palabras reservadas */
 {IDENTIFICADOR} {
     escribirTiraTokens("IDENTIFICADOR", yytext());
     escribirSimbolos(yytext());
     return symbol(sym.IDENTIFICADOR, yytext());
 }
 
+/* Literales numéricos */
 {NUMERO_ENTERO} { 
     escribirTiraTokens("NUMERO_ENTERO", yytext()); 
     return symbol(sym.NUMERO_ENTERO, Integer.parseInt(yytext()));
@@ -163,6 +177,7 @@ COMENTARIO = "//".*
     return symbol(sym.NUMERO_FLOTANTE, Float.parseFloat(yytext()));
 }
 
+/* Literales de cadena */
 {LITERAL} { 
     escribirTiraTokens("LITERAL", yytext()); 
     return symbol(sym.LITERAL, yytext());
@@ -170,6 +185,7 @@ COMENTARIO = "//".*
 
 <<EOF>> { return symbol(sym.EOF); }
 
+/* Errores léxicos */
 . { 
     escribirError(yytext());
 }

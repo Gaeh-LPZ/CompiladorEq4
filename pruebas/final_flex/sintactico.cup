@@ -1,9 +1,9 @@
-/* parser.cup - Versión con acciones estáticas */
+/* parser.cup - Versión compatible sin conflictos */
 import java_cup.runtime.*;
 import java.util.*;
 import java.io.*;
 
-/* Código de acciones - TODO ESTÁTICO */
+/* Código de acciones */
 action code {:
     public static PrintWriter archivoTraduccion;
     public static StringBuilder codigoTraducido = new StringBuilder();
@@ -63,11 +63,15 @@ parser code {:
 :}
 
 /* Inicialización */
-init with {: CUP$parser$actions.iniciarTraduccion("salida/traduccion.cpp"); :};
+init with {: 
+    action_obj.iniciarTraduccion("salida/traduccion.cpp"); 
+:};
+
 scan with {: return getScanner().next_token(); :};
 
 /* Terminales */
-terminal PUBLIC, CLASS, STATIC, VOID, MAIN;
+terminal PUBLIC, CLASS, STATIC, VOID, MAIN, PRIVATE, PROTECTED;
+terminal EXTENDS, IMPLEMENTS, NEW;
 terminal INT, FLOAT, BOOLEAN, STRING;
 terminal IF, ELSE, FOR, WHILE, DO, SWITCH, CASE, DEFAULT, BREAK;
 terminal SYSTEM, OUT, PRINTLN, PACKAGE, IMPORT, RETURN;
@@ -85,8 +89,13 @@ terminal Float NUMERO_FLOTANTE;
 terminal String LITERAL;
 
 /* Non-terminals */
-non terminal programa, pkg_opt, imp_list, imp_decl, clase, metodos, metodo, main_m;
-non terminal bloque, sents_opt, sents, sent, decl, asig, inc_dec;
+non terminal programa, pkg_opt, imp_list, imp_decl, clase;
+non terminal herencia_opt, implementa_opt;
+non terminal miembros, miembro;
+non terminal metodo, main_m, constructor;
+non terminal params;
+non terminal bloque, sents_opt, sents, sent;
+non terminal decl_miembro, decl_local, asig, inc_dec;
 non terminal ctrl, if_s, else_opt, for_s, while_s, do_while_s, switch_s;
 non terminal cases, case_s, def_opt, ret, call;
 non terminal String tipo, expr, term, fact, cond, relacional, logica, arg_single, arg_concat;
@@ -100,7 +109,7 @@ precedence left MULTIPLICACION, DIVISION, MODULO;
 
 start with programa;
 
-programa ::= pkg_opt imp_list clase {: CUP$parser$actions.finalizarTraduccion(); :} ;
+programa ::= pkg_opt imp_list clase {: action_obj.finalizarTraduccion(); :} ;
 
 pkg_opt ::= PACKAGE IDENTIFICADOR PUNTO_COMA
     | PACKAGE IDENTIFICADOR PUNTO IDENTIFICADOR PUNTO_COMA
@@ -109,127 +118,220 @@ pkg_opt ::= PACKAGE IDENTIFICADOR PUNTO_COMA
 imp_list ::= imp_decl imp_list | /* empty */ ;
 
 imp_decl ::= IMPORT IDENTIFICADOR PUNTO IDENTIFICADOR PUNTO_COMA
+    | IMPORT IDENTIFICADOR PUNTO IDENTIFICADOR PUNTO IDENTIFICADOR PUNTO_COMA
     | IMPORT IDENTIFICADOR PUNTO MULTIPLICACION PUNTO_COMA ;
 
-clase ::= PUBLIC CLASS IDENTIFICADOR:n LLAVE_IZQ
-    {: CUP$parser$actions.escribir("// Clase " + n + "\n\n"); :}
-    metodos LLAVE_DER ;
+clase ::= PUBLIC CLASS IDENTIFICADOR:n herencia_opt implementa_opt LLAVE_IZQ
+    {: action_obj.escribir("// Clase " + n + "\n\n"); :}
+    miembros LLAVE_DER ;
 
-metodos ::= metodo metodos | metodo ;
+herencia_opt ::= EXTENDS IDENTIFICADOR | /* empty */ ;
 
-metodo ::= main_m
-    | PUBLIC VOID IDENTIFICADOR PARENTESIS_IZQ tipo IDENTIFICADOR COMA tipo IDENTIFICADOR PARENTESIS_DER bloque
-    | PUBLIC tipo IDENTIFICADOR PARENTESIS_IZQ tipo IDENTIFICADOR COMA tipo IDENTIFICADOR PARENTESIS_DER bloque ;
+implementa_opt ::= IMPLEMENTS IDENTIFICADOR | /* empty */ ;
+
+miembros ::= miembro miembros | /* empty */ ;
+
+miembro ::= decl_miembro 
+    | constructor 
+    | metodo 
+    | main_m ;
+
+/* Declaración de variables miembro (con modificadores) */
+decl_miembro ::= PRIVATE tipo:t IDENTIFICADOR:n PUNTO_COMA
+    {: action_obj.declararVariable(n, t);
+       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + ";\n"); :}
+    | PRIVATE tipo:t IDENTIFICADOR:n ASIGNACION expr:e PUNTO_COMA
+    {: action_obj.declararVariable(n, t);
+       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + " = " + e + ";\n\n"); :}
+    | PUBLIC tipo:t IDENTIFICADOR:n PUNTO_COMA
+    {: action_obj.declararVariable(n, t);
+       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + ";\n"); :}
+    | PUBLIC tipo:t IDENTIFICADOR:n ASIGNACION expr:e PUNTO_COMA
+    {: action_obj.declararVariable(n, t);
+       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + " = " + e + ";\n\n"); :}
+    | PROTECTED tipo:t IDENTIFICADOR:n PUNTO_COMA
+    {: action_obj.declararVariable(n, t);
+       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + ";\n"); :}
+    | PROTECTED tipo:t IDENTIFICADOR:n ASIGNACION expr:e PUNTO_COMA
+    {: action_obj.declararVariable(n, t);
+       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + " = " + e + ";\n\n"); :} ;
+
+/* Constructor */
+constructor ::= PUBLIC IDENTIFICADOR:n PARENTESIS_IZQ PARENTESIS_DER
+    {: action_obj.escribir("// Constructor " + n + "\nvoid init_" + n + "() {\n"); :}
+    bloque
+    {: action_obj.escribir("}\n\n"); :}
+    | PUBLIC IDENTIFICADOR:n PARENTESIS_IZQ params PARENTESIS_DER
+    {: action_obj.escribir("// Constructor " + n + "\nvoid init_" + n + "() {\n"); :}
+    bloque
+    {: action_obj.escribir("}\n\n"); :} ;
+
+/* Métodos */
+metodo ::= PUBLIC VOID IDENTIFICADOR:n PARENTESIS_IZQ PARENTESIS_DER
+    {: action_obj.escribir("void " + n + "() {\n"); :}
+    bloque
+    {: action_obj.escribir("}\n\n"); :}
+    | PUBLIC VOID IDENTIFICADOR:n PARENTESIS_IZQ params PARENTESIS_DER
+    {: action_obj.escribir("void " + n + "(/* params */) {\n"); :}
+    bloque
+    {: action_obj.escribir("}\n\n"); :}
+    | PUBLIC tipo:t IDENTIFICADOR:n PARENTESIS_IZQ PARENTESIS_DER
+    {: action_obj.escribir(action_obj.traducirTipo(t) + " " + n + "() {\n"); :}
+    bloque
+    {: action_obj.escribir("}\n\n"); :}
+    | PUBLIC tipo:t IDENTIFICADOR:n PARENTESIS_IZQ params PARENTESIS_DER
+    {: action_obj.escribir(action_obj.traducirTipo(t) + " " + n + "(/* params */) {\n"); :}
+    bloque
+    {: action_obj.escribir("}\n\n"); :}
+    | PRIVATE VOID IDENTIFICADOR:n PARENTESIS_IZQ PARENTESIS_DER
+    {: action_obj.escribir("void " + n + "() {\n"); :}
+    bloque
+    {: action_obj.escribir("}\n\n"); :}
+    | PRIVATE VOID IDENTIFICADOR:n PARENTESIS_IZQ params PARENTESIS_DER
+    {: action_obj.escribir("void " + n + "(/* params */) {\n"); :}
+    bloque
+    {: action_obj.escribir("}\n\n"); :}
+    | PROTECTED VOID IDENTIFICADOR:n PARENTESIS_IZQ PARENTESIS_DER
+    {: action_obj.escribir("void " + n + "() {\n"); :}
+    bloque
+    {: action_obj.escribir("}\n\n"); :}
+    | PROTECTED VOID IDENTIFICADOR:n PARENTESIS_IZQ params PARENTESIS_DER
+    {: action_obj.escribir("void " + n + "(/* params */) {\n"); :}
+    bloque
+    {: action_obj.escribir("}\n\n"); :} ;
+
+params ::= tipo IDENTIFICADOR
+    | tipo IDENTIFICADOR COMA params ;
 
 main_m ::= PUBLIC STATIC VOID MAIN PARENTESIS_IZQ STRING CORCHETE_IZQ CORCHETE_DER IDENTIFICADOR PARENTESIS_DER
-    {: CUP$parser$actions.escribir("int main(int argc, char *argv[]) {\n"); :}
+    {: action_obj.escribir("int main(int argc, char *argv[]) {\n"); :}
     bloque
-    {: CUP$parser$actions.escribir("}\n"); :} ;
+    {: action_obj.escribir("    return 0;\n}\n"); :} ;
 
 bloque ::= LLAVE_IZQ sents_opt LLAVE_DER ;
+
 sents_opt ::= sents | /* empty */ ;
+
 sents ::= sent sents | sent ;
 
-sent ::= decl | asig | inc_dec | ctrl | call PUNTO_COMA | ret | bloque | expr PUNTO_COMA ;
+sent ::= decl_local 
+    | asig 
+    | inc_dec 
+    | ctrl 
+    | call PUNTO_COMA 
+    | ret 
+    | bloque 
+    | expr PUNTO_COMA ;
 
-decl ::= tipo:t IDENTIFICADOR:n PUNTO_COMA
-    {: CUP$parser$actions.declararVariable(n, t);
-       CUP$parser$actions.escribir("    " + CUP$parser$actions.traducirTipo(t) + " " + n + ";\n"); :}
+/* Declaraciones locales (sin modificadores) */
+decl_local ::= tipo:t IDENTIFICADOR:n PUNTO_COMA
+    {: action_obj.declararVariable(n, t);
+       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + ";\n"); :}
     | tipo:t IDENTIFICADOR:n COMA IDENTIFICADOR:n2 PUNTO_COMA
-    {: CUP$parser$actions.declararVariable(n, t);
-       CUP$parser$actions.declararVariable(n2, t);
-       CUP$parser$actions.escribir("    " + CUP$parser$actions.traducirTipo(t) + " " + n + ", " + n2 + ";\n"); :}
+    {: action_obj.declararVariable(n, t);
+       action_obj.declararVariable(n2, t);
+       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + ", " + n2 + ";\n"); :}
     | tipo:t IDENTIFICADOR:n ASIGNACION expr:e PUNTO_COMA
-    {: CUP$parser$actions.declararVariable(n, t);
-       CUP$parser$actions.escribir("    " + CUP$parser$actions.traducirTipo(t) + " " + n + " = " + e + ";\n"); :}
+    {: action_obj.declararVariable(n, t);
+       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + " = " + e + ";\n"); :}
     | tipo:t IDENTIFICADOR:n COMA IDENTIFICADOR:n2 ASIGNACION expr:e PUNTO_COMA
-    {: CUP$parser$actions.declararVariable(n, t);
-       CUP$parser$actions.declararVariable(n2, t);
-       CUP$parser$actions.escribir("    " + CUP$parser$actions.traducirTipo(t) + " " + n + ", " + n2 + " = " + e + ";\n"); :}
+    {: action_obj.declararVariable(n, t);
+       action_obj.declararVariable(n2, t);
+       action_obj.escribir("    " + action_obj.traducirTipo(t) + " " + n + ", " + n2 + " = " + e + ";\n"); :}
     | tipo CORCHETE_IZQ CORCHETE_DER IDENTIFICADOR:n PUNTO_COMA
-    {: CUP$parser$actions.escribir("    // array: " + n + "\n"); :} ;
+    {: action_obj.escribir("    // array: " + n + "\n"); :} ;
 
 tipo ::= INT {: RESULT = "int"; :}
     | FLOAT {: RESULT = "float"; :}
     | BOOLEAN {: RESULT = "boolean"; :}
-    | STRING {: RESULT = "String"; :} ;
+    | STRING {: RESULT = "String"; :}
+    | IDENTIFICADOR:n {: RESULT = n; :} ;
 
 asig ::= IDENTIFICADOR:n ASIGNACION expr:e PUNTO_COMA
-    {: CUP$parser$actions.escribir("    " + n + " = " + e + ";\n"); :}
+    {: action_obj.escribir("    " + n + " = " + e + ";\n"); :}
     | IDENTIFICADOR:n ASIG_SUMA expr:e PUNTO_COMA
-    {: CUP$parser$actions.escribir("    " + n + " += " + e + ";\n"); :}
+    {: action_obj.escribir("    " + n + " += " + e + ";\n"); :}
     | IDENTIFICADOR:n ASIG_RESTA expr:e PUNTO_COMA
-    {: CUP$parser$actions.escribir("    " + n + " -= " + e + ";\n"); :}
+    {: action_obj.escribir("    " + n + " -= " + e + ";\n"); :}
     | IDENTIFICADOR:n ASIG_MULT expr:e PUNTO_COMA
-    {: CUP$parser$actions.escribir("    " + n + " *= " + e + ";\n"); :}
+    {: action_obj.escribir("    " + n + " *= " + e + ";\n"); :}
     | IDENTIFICADOR:n ASIG_DIV expr:e PUNTO_COMA
-    {: CUP$parser$actions.escribir("    " + n + " /= " + e + ";\n"); :} ;
+    {: action_obj.escribir("    " + n + " /= " + e + ";\n"); :} ;
 
 inc_dec ::= IDENTIFICADOR:n INCREMENTO PUNTO_COMA
-    {: CUP$parser$actions.escribir("    " + n + "++;\n"); :}
+    {: action_obj.escribir("    " + n + "++;\n"); :}
     | IDENTIFICADOR:n DECREMENTO PUNTO_COMA
-    {: CUP$parser$actions.escribir("    " + n + "--;\n"); :} ;
+    {: action_obj.escribir("    " + n + "--;\n"); :} ;
 
 ctrl ::= if_s | for_s | while_s | do_while_s | switch_s ;
 
 if_s ::= IF PARENTESIS_IZQ cond:c PARENTESIS_DER
-    {: CUP$parser$actions.escribir("    if (" + c + ") {\n"); :}
-    bloque else_opt
-    {: CUP$parser$actions.escribir("    }\n"); :} ;
+    {: action_obj.escribir("    if (" + c + ") {\n"); :}
+    bloque
+    {: action_obj.escribir("    }\n"); :}
+    else_opt ;
 
-else_opt ::= ELSE {: CUP$parser$actions.escribir("    else {\n"); :} bloque | /* empty */ ;
+else_opt ::= ELSE 
+    {: action_obj.escribir("    else {\n"); :} 
+    bloque 
+    {: action_obj.escribir("    }\n"); :}
+    | /* empty */ ;
 
 for_s ::= FOR PARENTESIS_IZQ IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 INCREMENTO PARENTESIS_DER
-    {: CUP$parser$actions.escribir("    for (" + v + " = " + e + "; " + c + "; " + v2 + "++) {\n"); :}
-    bloque {: CUP$parser$actions.escribir("    }\n"); :}
+    {: action_obj.escribir("    for (" + v + " = " + e + "; " + c + "; " + v2 + "++) {\n"); :}
+    bloque {: action_obj.escribir("    }\n"); :}
     | FOR PARENTESIS_IZQ IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 DECREMENTO PARENTESIS_DER
-    {: CUP$parser$actions.escribir("    for (" + v + " = " + e + "; " + c + "; " + v2 + "--) {\n"); :}
-    bloque {: CUP$parser$actions.escribir("    }\n"); :}
+    {: action_obj.escribir("    for (" + v + " = " + e + "; " + c + "; " + v2 + "--) {\n"); :}
+    bloque {: action_obj.escribir("    }\n"); :}
     | FOR PARENTESIS_IZQ tipo:t IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 INCREMENTO PARENTESIS_DER
-    {: CUP$parser$actions.declararVariable(v, t);
-       CUP$parser$actions.escribir("    for (" + t + " " + v + " = " + e + "; " + c + "; " + v2 + "++) {\n"); :}
-    bloque {: CUP$parser$actions.escribir("    }\n"); :}
+    {: action_obj.declararVariable(v, t);
+       action_obj.escribir("    for (" + t + " " + v + " = " + e + "; " + c + "; " + v2 + "++) {\n"); :}
+    bloque {: action_obj.escribir("    }\n"); :}
+    | FOR PARENTESIS_IZQ tipo:t IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA IDENTIFICADOR:v2 DECREMENTO PARENTESIS_DER
+    {: action_obj.declararVariable(v, t);
+       action_obj.escribir("    for (" + t + " " + v + " = " + e + "; " + c + "; " + v2 + "--) {\n"); :}
+    bloque {: action_obj.escribir("    }\n"); :}
     | FOR PARENTESIS_IZQ IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA expr PARENTESIS_DER
-    {: CUP$parser$actions.escribir("    for (" + v + " = " + e + "; " + c + "; /* expr */) {\n"); :}
-    bloque {: CUP$parser$actions.escribir("    }\n"); :}
+    {: action_obj.escribir("    for (" + v + " = " + e + "; " + c + "; /* expr */) {\n"); :}
+    bloque {: action_obj.escribir("    }\n"); :}
     | FOR PARENTESIS_IZQ tipo:t IDENTIFICADOR:v ASIGNACION expr:e PUNTO_COMA cond:c PUNTO_COMA expr PARENTESIS_DER
-    {: CUP$parser$actions.declararVariable(v, t);
-       CUP$parser$actions.escribir("    for (" + t + " " + v + " = " + e + "; " + c + "; /* expr */) {\n"); :}
-    bloque {: CUP$parser$actions.escribir("    }\n"); :} ;
+    {: action_obj.declararVariable(v, t);
+       action_obj.escribir("    for (" + t + " " + v + " = " + e + "; " + c + "; /* expr */) {\n"); :}
+    bloque {: action_obj.escribir("    }\n"); :} ;
 
 while_s ::= WHILE PARENTESIS_IZQ cond:c PARENTESIS_DER
-    {: CUP$parser$actions.escribir("    while (" + c + ") {\n"); :}
-    bloque {: CUP$parser$actions.escribir("    }\n"); :} ;
+    {: action_obj.escribir("    while (" + c + ") {\n"); :}
+    bloque {: action_obj.escribir("    }\n"); :} ;
 
-do_while_s ::= DO {: CUP$parser$actions.escribir("    do {\n"); :}
+do_while_s ::= DO {: action_obj.escribir("    do {\n"); :}
     bloque WHILE PARENTESIS_IZQ cond:c PARENTESIS_DER PUNTO_COMA
-    {: CUP$parser$actions.escribir("    } while (" + c + ");\n"); :} ;
+    {: action_obj.escribir("    } while (" + c + ");\n"); :} ;
 
 switch_s ::= SWITCH PARENTESIS_IZQ IDENTIFICADOR:v PARENTESIS_DER LLAVE_IZQ
-    {: CUP$parser$actions.escribir("    switch (" + v + ") {\n"); :}
+    {: action_obj.escribir("    switch (" + v + ") {\n"); :}
     cases def_opt LLAVE_DER
-    {: CUP$parser$actions.escribir("    }\n"); :} ;
+    {: action_obj.escribir("    }\n"); :} ;
 
 cases ::= case_s cases | case_s ;
 
 case_s ::= CASE NUMERO_ENTERO:n DOS_PUNTOS
-    {: CUP$parser$actions.escribir("        case " + n + ":\n"); :}
+    {: action_obj.escribir("        case " + n + ":\n"); :}
     sents_opt BREAK PUNTO_COMA
-    {: CUP$parser$actions.escribir("            break;\n"); :} ;
+    {: action_obj.escribir("            break;\n"); :} ;
 
 def_opt ::= DEFAULT DOS_PUNTOS
-    {: CUP$parser$actions.escribir("        default:\n"); :}
+    {: action_obj.escribir("        default:\n"); :}
     sents_opt | /* empty */ ;
 
 ret ::= RETURN expr:e PUNTO_COMA
-    {: CUP$parser$actions.escribir("    return " + e + ";\n"); :} ;
+    {: action_obj.escribir("    return " + e + ";\n"); :} ;
 
 call ::= SYSTEM PUNTO OUT PUNTO PRINTLN PARENTESIS_IZQ arg_concat:a PARENTESIS_DER
-    {: CUP$parser$actions.escribir("    cout << " + a + " << endl;\n"); :}
+    {: action_obj.escribir("    cout << " + a + " << endl;\n"); :}
     | SYSTEM PUNTO OUT PUNTO PRINTLN PARENTESIS_IZQ arg_single:a PARENTESIS_DER
-    {: CUP$parser$actions.escribir("    cout << " + a + " << endl;\n"); :}
+    {: action_obj.escribir("    cout << " + a + " << endl;\n"); :}
     | IDENTIFICADOR:n PARENTESIS_IZQ PARENTESIS_DER
-    {: CUP$parser$actions.escribir("    " + n + "();\n"); :} ;
+    {: action_obj.escribir("    " + n + "();\n"); :} ;
 
 arg_single ::= LITERAL:l {: RESULT = l; :}
     | NUMERO_ENTERO:n {: RESULT = n.toString(); :}
