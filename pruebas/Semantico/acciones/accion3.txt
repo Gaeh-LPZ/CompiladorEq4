@@ -1,0 +1,6 @@
+E -> E + T,{ E.trad = E1.trad + T.trad + ""+""; }  
+E -> T,{ E.trad = T.trad; }
+T -> T * F,{ T.trad = T1.trad + F.trad + ""*""; }
+T -> F,{ T.trad = F.trad; }
+F -> ( E ),{ F.trad = E.trad; } 
+F -> id,{ F.trad = id.valex; }
